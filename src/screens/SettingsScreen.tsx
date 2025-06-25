@@ -9,10 +9,10 @@ import {
   ScrollView,
   SafeAreaView 
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
+import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
 
 export default function SettingsScreen() {
-  const { logout, user } = useAuth();
+  const { signOut, user } = useFirebaseAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [reminderDays, setReminderDays] = useState(1);
   const [darkMode, setDarkMode] = useState(false);
@@ -27,7 +27,7 @@ export default function SettingsScreen() {
           text: 'ログアウト', 
           style: 'destructive',
           onPress: () => {
-            logout();
+            signOut();
           }
         }
       ]
@@ -107,7 +107,7 @@ export default function SettingsScreen() {
           
           <SettingItem
             title="アカウント情報"
-            subtitle={`${user?.name} (${user?.email})`}
+            subtitle={`${user?.displayName || 'ユーザー'} (${user?.email})`}
             showArrow
             onPress={() => {
               // TODO: プロフィール編集画面への遷移
