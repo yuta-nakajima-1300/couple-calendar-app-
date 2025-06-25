@@ -4,14 +4,14 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
-// 本番環境では環境変数を使用してください
-const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
+ const firebaseConfig = {
+  apiKey: "AIzaSyA6rjou9WjkG-Ivqfpqcis5jZXbGLfyXDY",
+  authDomain: "couple-calendar-app-ac225.firebaseapp.com",
+  projectId: "couple-calendar-app-ac225",
+  storageBucket: "couple-calendar-app-ac225.firebasestorage.app",
+  messagingSenderId: "1093220447522",
+  appId: "1:1093220447522:web:9d96a3e6087f9ad4f6217b",
+  measurementId: "G-00RBKPTXQ7"
 };
 
 // Initialize Firebase
