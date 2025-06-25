@@ -80,26 +80,28 @@ class FirebaseDataService {
         }
       }
 
-      const eventData: FirebaseEvent = {
+      const eventData: Partial<FirebaseEvent> = {
         id: eventId,
         title,
         description,
         date,
-        endDate,
-        time,
-        endTime,
         isAllDay: isAllDay || false,
         category: categoryId || 'personal',
-        photoURL,
         createdBy: userId,
-        coupleId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
+      // undefined フィールドを除外
+      if (endDate) eventData.endDate = endDate;
+      if (time) eventData.time = time;
+      if (endTime) eventData.endTime = endTime;
+      if (photoURL) eventData.photoURL = photoURL;
+      if (coupleId) eventData.coupleId = coupleId;
+
       await setDoc(doc(db, 'events', eventId), eventData);
       
-      return eventData;
+      return eventData as FirebaseEvent;
     } catch (error) {
       console.error('Failed to create event:', error);
       throw error;
