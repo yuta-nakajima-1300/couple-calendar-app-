@@ -50,7 +50,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
         endTime: event.endTime,
         isAllDay: event.isAllDay || false,
         category: DEFAULT_CATEGORIES.find(cat => cat.id === (event.category || 'personal')) || DEFAULT_CATEGORIES[2],
-        photo: event.photoUri,
         createdBy: 'demo-user-1',
         createdAt: event.createdAt,
         updatedAt: event.createdAt
@@ -74,7 +73,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
         eventData.time,
         eventData.description,
         eventData.category.id as 'date' | 'work' | 'personal',
-        eventData.photo,
         eventData.endDate,
         eventData.endTime,
         eventData.isAllDay
@@ -90,7 +88,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
         endTime: eventData.endTime,
         isAllDay: eventData.isAllDay || false,
         category: eventData.category,
-        photo: newSimpleEvent.photoUri,
         createdBy: eventData.createdBy,
         createdAt: newSimpleEvent.createdAt,
         updatedAt: newSimpleEvent.createdAt
@@ -115,7 +112,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
         time: eventData.time,
         description: eventData.description,
         category: eventData.category?.id as 'date' | 'work' | 'personal',
-        photoUri: eventData.photo
       };
       
       const updatedSimpleEvent = await SimpleDataService.updateEvent(demoUserId, id, simpleEventData);
@@ -131,7 +127,6 @@ export const EventProvider: React.FC<EventProviderProps> = ({ children }) => {
           endTime: eventData.endTime,
           isAllDay: eventData.isAllDay || false,
           category: eventData.category || DEFAULT_CATEGORIES[2],
-          photo: updatedSimpleEvent.photoUri,
           createdBy: 'demo-user-1',
           createdAt: updatedSimpleEvent.createdAt,
           updatedAt: new Date().toISOString()

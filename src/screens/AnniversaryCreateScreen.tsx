@@ -8,14 +8,12 @@ import {
   Alert,
   ScrollView,
   Platform,
-  Image,
   Switch
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { AnniversaryStackParamList } from '../types/navigation';
 import { useAnniversaries } from '../contexts/AnniversaryContext';
-import { PhotoService } from '../services/photoService';
 import DateRangePicker from '../components/DateRangePicker';
 import TimePicker from '../components/TimePicker';
 
@@ -26,7 +24,6 @@ export default function AnniversaryCreateScreen() {
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(true);
-  const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [time, setTime] = useState('');
   const [isAllDay, setIsAllDay] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -51,7 +48,6 @@ export default function AnniversaryCreateScreen() {
         description: description.trim(),
         date,
         isRecurring,
-        photo,
         createdBy: 'current-user',
       });
 
@@ -65,7 +61,7 @@ export default function AnniversaryCreateScreen() {
   };
 
   const handleCancel = () => {
-    if (title.trim() || description.trim() || date.trim() || time.trim() || photo) {
+    if (title.trim() || description.trim() || date.trim() || time.trim()) {
       Alert.alert(
         '確認',
         '入力内容が破棄されます。よろしいですか？',
@@ -98,23 +94,6 @@ export default function AnniversaryCreateScreen() {
     return time;
   };
 
-  const handlePhotoPress = () => {
-    PhotoService.showPhotoOptions(
-      async () => {
-        const selectedPhoto = await PhotoService.selectPhoto();
-        if (selectedPhoto) {
-          setPhoto(selectedPhoto);
-        }
-      },
-      async () => {
-        const takenPhoto = await PhotoService.takePhoto();
-        if (takenPhoto) {
-          setPhoto(takenPhoto);
-        }
-      },
-      photo ? () => setPhoto(undefined) : undefined
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -208,17 +187,6 @@ export default function AnniversaryCreateScreen() {
           <Text style={styles.charCount}>{description.length}/200</Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>写真</Text>
-          <TouchableOpacity style={styles.photoButton} onPress={handlePhotoPress}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-            ) : (
-              <Text style={styles.photoButtonText}>写真を追加</Text>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.hint}>1枚まで添付可能</Text>
-        </View>
       </ScrollView>
 
       <DateRangePicker
@@ -320,20 +288,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  photoButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 40,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
   hint: {
     fontSize: 12,
     color: '#999',
@@ -344,11 +298,6 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'right',
     marginTop: 4,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 120,
-    borderRadius: 8,
   },
   allDayContainer: {
     flexDirection: 'row',

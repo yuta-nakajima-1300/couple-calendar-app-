@@ -8,11 +8,9 @@ import {
   Alert,
   Switch,
   Modal,
-  ScrollView,
-  Image
+  ScrollView
 } from 'react-native';
 import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
-import { PhotoService } from '../services/photoService';
 import CategoryPicker from './CategoryPicker';
 import TimePicker from './TimePicker';
 import { EventCategory, DEFAULT_CATEGORIES } from '../types';
@@ -37,7 +35,6 @@ export default function InlineEventCreator({
   const [endTime, setEndTime] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [category, setCategory] = useState<EventCategory>(DEFAULT_CATEGORIES[0]);
-  const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -49,7 +46,6 @@ export default function InlineEventCreator({
     setEndTime('');
     setIsAllDay(false);
     setCategory(DEFAULT_CATEGORIES[0]);
-    setPhoto(undefined);
   };
 
   const handleSave = async () => {
@@ -83,7 +79,6 @@ export default function InlineEventCreator({
         endTime: isAllDay ? undefined : endTime || undefined,
         isAllDay,
         category,
-        photo,
         createdBy: 'current-user',
       });
 
@@ -98,7 +93,7 @@ export default function InlineEventCreator({
   };
 
   const handleCancel = () => {
-    if (title.trim() || description.trim() || time.trim() || endTime.trim() || photo) {
+    if (title.trim() || description.trim() || time.trim() || endTime.trim()) {
       Alert.alert(
         '確認',
         '入力内容が破棄されます。よろしいですか？',
@@ -134,23 +129,6 @@ export default function InlineEventCreator({
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
-  const handlePhotoPress = () => {
-    PhotoService.showPhotoOptions(
-      async () => {
-        const selectedPhoto = await PhotoService.selectPhoto();
-        if (selectedPhoto) {
-          setPhoto(selectedPhoto);
-        }
-      },
-      async () => {
-        const takenPhoto = await PhotoService.takePhoto();
-        if (takenPhoto) {
-          setPhoto(takenPhoto);
-        }
-      },
-      photo ? () => setPhoto(undefined) : undefined
-    );
-  };
 
   return (
     <Modal 
@@ -242,16 +220,6 @@ export default function InlineEventCreator({
             <Text style={styles.charCount}>{description.length}/200</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>写真</Text>
-            <TouchableOpacity style={styles.photoButton} onPress={handlePhotoPress}>
-              {photo ? (
-                <Image source={{ uri: photo }} style={styles.photoPreview} />
-              ) : (
-                <Text style={styles.photoButtonText}>写真を追加</Text>
-              )}
-            </TouchableOpacity>
-          </View>
         </ScrollView>
 
         <CategoryPicker
@@ -380,25 +348,6 @@ const styles = StyleSheet.create({
   categoryText: {
     fontSize: 16,
     color: '#333',
-  },
-  photoButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 30,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  photoPreview: {
-    width: '100%',
-    height: 100,
-    borderRadius: 8,
   },
   charCount: {
     fontSize: 12,

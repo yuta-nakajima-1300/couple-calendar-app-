@@ -15,7 +15,6 @@ export interface Event {
   endTime?: string; // 終了時刻
   isAllDay?: boolean; // 終日予定フラグ
   category: EventCategory;
-  photo?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -42,7 +41,6 @@ export interface Anniversary {
   title: string;
   date: string;
   description?: string;
-  photo?: string;
   isRecurring: boolean;
   daysUntil?: number;
   createdBy: string;

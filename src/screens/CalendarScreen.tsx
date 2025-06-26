@@ -7,7 +7,6 @@ import {
   FlatList,
   SafeAreaView,
   ActivityIndicator,
-  Image,
   Alert 
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
@@ -120,9 +119,6 @@ export default function CalendarScreen() {
           </Text>
         )}
       </View>
-      {item.photo && (
-        <Image source={{ uri: item.photo }} style={styles.eventPhoto} />
-      )}
     </TouchableOpacity>
   );
 
@@ -347,12 +343,6 @@ const styles = StyleSheet.create({
   eventDuration: {
     fontSize: 12,
     color: '#999',
-  },
-  eventPhoto: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginLeft: 12,
   },
   noEvents: {
     textAlign: 'center',

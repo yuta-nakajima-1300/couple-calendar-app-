@@ -5,7 +5,6 @@ import {
   StyleSheet, 
   FlatList, 
   TouchableOpacity, 
-  Image,
   SafeAreaView,
   ActivityIndicator 
 } from 'react-native';
@@ -40,13 +39,9 @@ export default function AnniversariesScreen() {
     >
       <View style={styles.cardContent}>
         <View style={styles.cardLeft}>
-          {item.photo ? (
-            <Image source={{ uri: item.photo }} style={styles.photo} />
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderText}>📅</Text>
-            </View>
-          )}
+          <View style={styles.photoPlaceholder}>
+            <Text style={styles.photoPlaceholderText}>📅</Text>
+          </View>
         </View>
         
         <View style={styles.cardRight}>
@@ -197,11 +192,6 @@ const styles = StyleSheet.create({
   },
   cardLeft: {
     marginRight: 16,
-  },
-  photo: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
   },
   photoPlaceholder: {
     width: 60,

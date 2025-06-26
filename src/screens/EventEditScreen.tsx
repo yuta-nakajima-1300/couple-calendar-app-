@@ -8,14 +8,12 @@ import {
   Alert,
   ScrollView,
   Platform,
-  Image,
   Switch
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { CalendarStackParamList } from '../types/navigation';
 import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
-import { PhotoService } from '../services/photoService';
 import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
@@ -50,7 +48,6 @@ export default function EventEditScreen() {
   const [endTime, setEndTime] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [category, setCategory] = useState<EventCategory>(DEFAULT_CATEGORIES[0]);
-  const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -68,7 +65,6 @@ export default function EventEditScreen() {
       setEndTime(event.endTime || '');
       setIsAllDay(event.isAllDay || false);
       setCategory(event.category);
-      setPhoto(event.photo);
     }
   }, [eventId, events]);
 
@@ -104,7 +100,6 @@ export default function EventEditScreen() {
         endTime: isAllDay ? undefined : endTime || undefined,
         isAllDay,
         category,
-        photo,
       });
 
       // カレンダー画面に戻る
@@ -182,23 +177,6 @@ export default function EventEditScreen() {
     return endTime ? `${time} - ${endTime}` : time;
   };
 
-  const handlePhotoPress = () => {
-    PhotoService.showPhotoOptions(
-      async () => {
-        const selectedPhoto = await PhotoService.selectPhoto();
-        if (selectedPhoto) {
-          setPhoto(selectedPhoto);
-        }
-      },
-      async () => {
-        const takenPhoto = await PhotoService.takePhoto();
-        if (takenPhoto) {
-          setPhoto(takenPhoto);
-        }
-      },
-      photo ? () => setPhoto(undefined) : undefined
-    );
-  };
 
   return (
     <View style={styles.container}>
@@ -304,17 +282,6 @@ export default function EventEditScreen() {
           <Text style={styles.charCount}>{description.length}/200</Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>写真</Text>
-          <TouchableOpacity style={styles.photoButton} onPress={handlePhotoPress}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photoPreview} />
-            ) : (
-              <Text style={styles.photoButtonText}>写真を追加</Text>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.hint}>1枚まで添付可能</Text>
-        </View>
       </ScrollView>
 
       <DateRangePicker
@@ -485,20 +452,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  photoButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 40,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  photoButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
   hint: {
     fontSize: 12,
     color: '#999',
@@ -509,11 +462,6 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'right',
     marginTop: 4,
-  },
-  photoPreview: {
-    width: '100%',
-    height: 120,
-    borderRadius: 8,
   },
   timePickerButton: {
     backgroundColor: '#fff',

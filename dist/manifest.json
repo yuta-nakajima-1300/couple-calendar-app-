@@ -1,0 +1,23 @@
+{
+  "name": "Couple Calendar App",
+  "short_name": "Couple Calendar",
+  "description": "A calendar app for couples to manage events and anniversaries",
+  "theme_color": "#4a90e2",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "./assets/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./assets/adaptive-icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

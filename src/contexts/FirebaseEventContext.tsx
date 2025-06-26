@@ -73,7 +73,6 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
         eventData.time,
         eventData.description,
         eventData.category.id as string,
-        eventData.photo,
         eventData.endDate,
         eventData.endTime,
         eventData.isAllDay
@@ -90,7 +89,6 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
         endTime: firebaseEvent.endTime,
         isAllDay: firebaseEvent.isAllDay || false,
         category: eventData.category,
-        photo: firebaseEvent.photoURL,
         createdBy: firebaseEvent.createdBy,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -121,7 +119,6 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
       if (eventData.endTime !== undefined) updates.endTime = eventData.endTime;
       if (eventData.isAllDay !== undefined) updates.isAllDay = eventData.isAllDay;
       if (eventData.category !== undefined) updates.category = eventData.category.id;
-      if (eventData.photo !== undefined) updates.photoURL = eventData.photo;
 
       await firebaseDataService.updateEvent(id, user.uid, updates);
       

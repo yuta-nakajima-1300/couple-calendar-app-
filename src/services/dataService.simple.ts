@@ -11,7 +11,6 @@ export interface SimpleEvent {
   isAllDay?: boolean;
   description?: string;
   category?: 'date' | 'work' | 'personal';
-  photoUri?: string;
   createdAt: string;
 }
 
@@ -20,7 +19,6 @@ export interface SimpleAnniversary {
   coupleId: string;
   title: string;
   date: string;
-  photoUri?: string;
   createdAt: string;
 }
 
@@ -35,8 +33,7 @@ export class SimpleDataService {
     date: string, 
     time?: string, 
     description?: string, 
-    category: 'date' | 'work' | 'personal' = 'personal', 
-    photoUri?: string,
+    category: 'date' | 'work' | 'personal' = 'personal',
     endDate?: string,
     endTime?: string,
     isAllDay?: boolean
@@ -54,7 +51,6 @@ export class SimpleDataService {
         isAllDay,
         description,
         category,
-        photoUri,
         createdAt: new Date().toISOString(),
       };
       
@@ -122,7 +118,7 @@ export class SimpleDataService {
   }
   
   // Anniversary CRUD (simplified)
-  static async createAnniversary(coupleId: string, title: string, date: string, photoUri?: string): Promise<SimpleAnniversary> {
+  static async createAnniversary(coupleId: string, title: string, date: string): Promise<SimpleAnniversary> {
     try {
       const anniversaries = await this.getCoupleAnniversaries(coupleId);
       const anniversary: SimpleAnniversary = {
@@ -130,7 +126,6 @@ export class SimpleDataService {
         coupleId,
         title,
         date,
-        photoUri,
         createdAt: new Date().toISOString(),
       };
       
