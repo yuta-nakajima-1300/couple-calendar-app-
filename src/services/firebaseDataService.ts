@@ -13,8 +13,7 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from '../config/firebase';
+import { db } from '../config/firebase';
 import { Event, EventCategory, DEFAULT_CATEGORIES } from '../types';
 
 export interface FirebaseEvent {
@@ -27,7 +26,6 @@ export interface FirebaseEvent {
   endTime?: string;
   isAllDay?: boolean;
   category: string;
-  photoURL?: string;
   createdBy: string;
   coupleId?: string;
   createdAt: any;
@@ -40,7 +38,6 @@ export interface FirebaseAnniversary {
   description?: string;
   date: string;
   isRecurring: boolean;
-  photoURL?: string;
   createdBy: string;
   coupleId?: string;
   createdAt: any;
@@ -57,7 +54,6 @@ class FirebaseDataService {
     time?: string,
     description?: string,
     categoryId?: string,
-    photoFile?: File | string,
     endDate?: string,
     endTime?: string,
     isAllDay?: boolean
@@ -65,21 +61,6 @@ class FirebaseDataService {
     try {
       const eventId = doc(collection(db, 'events')).id;
       
-      let photoURL: string | undefined;
-      
-      // 写真のアップロード
-      if (photoFile) {
-        if (typeof photoFile === 'string') {
-          // Data URLの場合
-          const response = await fetch(photoFile);
-          const blob = await response.blob();
-          photoURL = await this.uploadPhoto(blob, `events/${eventId}`);
-        } else {
-          // Fileオブジェクトの場合
-          photoURL = await this.uploadPhoto(photoFile, `events/${eventId}`);
-        }
-      }
-
       const eventData: Partial<FirebaseEvent> = {
         id: eventId,
         title,
@@ -96,7 +77,6 @@ class FirebaseDataService {
       if (endDate) eventData.endDate = endDate;
       if (time) eventData.time = time;
       if (endTime) eventData.endTime = endTime;
-      if (photoURL) eventData.photoURL = photoURL;
       if (coupleId) eventData.coupleId = coupleId;
 
       await setDoc(doc(db, 'events', eventId), eventData);
@@ -157,11 +137,6 @@ class FirebaseDataService {
         throw new Error('削除権限がありません');
       }
 
-      // 写真も削除
-      if (eventData.photoURL) {
-        await this.deletePhoto(`events/${eventId}`);
-      }
-
       await deleteDoc(eventRef);
       return true;
     } catch (error) {
@@ -179,15 +154,13 @@ class FirebaseDataService {
         // カップルの場合、両方のイベントを取得
         q = query(
           eventsRef,
-          where('coupleId', '==', coupleId),
-          orderBy('date', 'desc')
+          where('coupleId', '==', coupleId)
         );
       } else {
         // 個人のイベントのみ
         q = query(
           eventsRef,
-          where('createdBy', '==', userId),
-          orderBy('date', 'desc')
+          where('createdBy', '==', userId)
         );
       }
 
@@ -219,14 +192,12 @@ class FirebaseDataService {
     if (coupleId) {
       q = query(
         eventsRef,
-        where('coupleId', '==', coupleId),
-        orderBy('date', 'desc')
+        where('coupleId', '==', coupleId)
       );
     } else {
       q = query(
         eventsRef,
-        where('createdBy', '==', userId),
-        orderBy('date', 'desc')
+        where('createdBy', '==', userId)
       );
     }
 
@@ -250,31 +221,17 @@ class FirebaseDataService {
     title: string,
     date: string,
     isRecurring: boolean,
-    description?: string,
-    photoFile?: File | string
+    description?: string
   ): Promise<FirebaseAnniversary> {
     try {
       const anniversaryId = doc(collection(db, 'anniversaries')).id;
       
-      let photoURL: string | undefined;
-      
-      if (photoFile) {
-        if (typeof photoFile === 'string') {
-          const response = await fetch(photoFile);
-          const blob = await response.blob();
-          photoURL = await this.uploadPhoto(blob, `anniversaries/${anniversaryId}`);
-        } else {
-          photoURL = await this.uploadPhoto(photoFile, `anniversaries/${anniversaryId}`);
-        }
-      }
-
       const anniversaryData: FirebaseAnniversary = {
         id: anniversaryId,
         title,
         description,
         date,
         isRecurring,
-        photoURL,
         createdBy: userId,
         coupleId,
         createdAt: serverTimestamp(),
@@ -290,29 +247,6 @@ class FirebaseDataService {
     }
   }
 
-  // 写真アップロード
-  private async uploadPhoto(file: File | Blob, path: string): Promise<string> {
-    try {
-      const storageRef = ref(storage, path);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      return downloadURL;
-    } catch (error) {
-      console.error('Failed to upload photo:', error);
-      throw error;
-    }
-  }
-
-  // 写真削除
-  private async deletePhoto(path: string): Promise<void> {
-    try {
-      const photoRef = ref(storage, path);
-      await deleteObject(photoRef);
-    } catch (error) {
-      console.error('Failed to delete photo:', error);
-      // 写真削除の失敗は致命的ではないので、エラーをログに記録するだけ
-    }
-  }
 
   // FirebaseEvent を Event に変換
   private convertFirebaseEventToEvent(firebaseEvent: FirebaseEvent): Event {
@@ -328,7 +262,6 @@ class FirebaseDataService {
       endTime: firebaseEvent.endTime,
       isAllDay: firebaseEvent.isAllDay || false,
       category,
-      photo: firebaseEvent.photoURL,
       createdBy: firebaseEvent.createdBy,
       createdAt: this.convertTimestamp(firebaseEvent.createdAt),
       updatedAt: this.convertTimestamp(firebaseEvent.updatedAt),
