@@ -112,34 +112,56 @@ export default function EventEditScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      '確認',
-      'この予定を削除しますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        { 
-          text: '削除', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              setDeleting(true);
-              const success = await deleteEvent(eventId);
-              if (success) {
-                // カレンダー画面に戻る
-                navigation.navigate('CalendarHome');
-              } else {
-                Alert.alert('エラー', '予定の削除に失敗しました');
-              }
-            } catch (error) {
-              Alert.alert('エラー', '予定の削除に失敗しました');
-              console.error('Delete error:', error);
-            } finally {
-              setDeleting(false);
-            }
+    console.log('Delete button clicked'); // デバッグ用
+    if (Platform.OS === 'web') {
+      // Web環境での確認ダイアログ
+      const confirmed = window.confirm('この予定を削除しますか？');
+      if (confirmed) {
+        performDelete();
+      }
+    } else {
+      // モバイル環境
+      Alert.alert(
+        '確認',
+        'この予定を削除しますか？',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          { 
+            text: '削除', 
+            style: 'destructive', 
+            onPress: performDelete
           }
+        ]
+      );
+    }
+  };
+
+  const performDelete = async () => {
+    try {
+      console.log('Performing delete for event:', eventId); // デバッグ用
+      setDeleting(true);
+      const success = await deleteEvent(eventId);
+      console.log('Delete result:', success); // デバッグ用
+      if (success) {
+        // カレンダー画面に戻る
+        navigation.navigate('CalendarHome');
+      } else {
+        if (Platform.OS === 'web') {
+          window.alert('予定の削除に失敗しました');
+        } else {
+          Alert.alert('エラー', '予定の削除に失敗しました');
         }
-      ]
-    );
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('予定の削除に失敗しました');
+      } else {
+        Alert.alert('エラー', '予定の削除に失敗しました');
+      }
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleCancel = () => {
