@@ -14,7 +14,7 @@ import {
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
 
 export default function CoupleSettingsScreen() {
-  const { userProfile, linkCouple, unlinkCouple, signOut } = useFirebaseAuth();
+  const { userProfile, linkCouple, unlinkCouple, signOut, loading } = useFirebaseAuth();
   const [inviteCode, setInviteCode] = useState('');
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
@@ -100,6 +100,21 @@ export default function CoupleSettingsScreen() {
     );
   }
 
+  // ユーザープロファイルが読み込めない場合の緊急ログアウト
+  if (!userProfile && !loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emergencyContainer}>
+          <Text style={styles.emergencyTitle}>設定画面にアクセスできません</Text>
+          <Text style={styles.emergencyText}>ユーザープロファイルの読み込みに失敗しました</Text>
+          <TouchableOpacity style={styles.emergencyButton} onPress={signOut}>
+            <Text style={styles.emergencyButtonText}>ログアウト</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.content}>
@@ -107,8 +122,8 @@ export default function CoupleSettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>アカウント情報</Text>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{userProfile.displayName}</Text>
-            <Text style={styles.userEmail}>{userProfile.email}</Text>
+            <Text style={styles.userName}>{userProfile?.displayName}</Text>
+            <Text style={styles.userEmail}>{userProfile?.email}</Text>
           </View>
         </View>
 
@@ -369,5 +384,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     fontWeight: '500',
+  },
+  emergencyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emergencyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  emergencyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  emergencyButton: {
+    backgroundColor: '#ff4757',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 8,
+  },
+  emergencyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
