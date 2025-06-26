@@ -59,11 +59,7 @@ export default function CalendarScreen() {
             
             dates[dateString] = {
               ...dates[dateString],
-              marked: true,
-              dotColor: event.category.color,
-              startingDay: isStart,
-              endingDay: isEnd,
-              color: event.category.color,
+              dots: [...(dates[dateString]?.dots || []), { color: event.category.color }]
             };
             current.setDate(current.getDate() + 1);
           }
@@ -72,8 +68,7 @@ export default function CalendarScreen() {
           if (event.date && event.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
             dates[event.date] = {
               ...dates[event.date],
-              marked: true,
-              dotColor: event.category.color
+              dots: [...(dates[event.date]?.dots || []), { color: event.category.color }]
             };
           }
         }
@@ -87,7 +82,8 @@ export default function CalendarScreen() {
       dates[selectedDate] = {
         ...dates[selectedDate],
         selected: true,
-        selectedColor: '#ff6b6b'
+        selectedColor: '#007AFF',
+        selectedTextColor: '#FFFFFF'
       };
     }
 
@@ -170,7 +166,7 @@ export default function CalendarScreen() {
           setSelectedDate(day.dateString);
         }}
         markedDates={markedDates}
-        markingType="period"
+        markingType="multi-dot"
         monthFormat={'yyyy年 MM月'}
         hideExtraDays={true}
         disableMonthChange={false}
