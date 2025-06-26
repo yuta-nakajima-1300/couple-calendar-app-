@@ -30,6 +30,10 @@ export interface FirebaseEvent {
   coupleId?: string;
   createdAt: any;
   updatedAt: any;
+  // 繰り返し機能
+  isRecurring?: boolean;
+  recurringId?: string;
+  recurringRule?: any; // RecurringRuleをanyとして保存
 }
 
 export interface FirebaseAnniversary {
@@ -56,7 +60,10 @@ class FirebaseDataService {
     categoryId?: string,
     endDate?: string,
     endTime?: string,
-    isAllDay?: boolean
+    isAllDay?: boolean,
+    isRecurring?: boolean,
+    recurringId?: string,
+    recurringRule?: any
   ): Promise<FirebaseEvent> {
     try {
       const eventId = doc(collection(db, 'events')).id;
@@ -78,6 +85,9 @@ class FirebaseDataService {
       if (time) eventData.time = time;
       if (endTime) eventData.endTime = endTime;
       if (coupleId) eventData.coupleId = coupleId;
+      if (isRecurring) eventData.isRecurring = isRecurring;
+      if (recurringId) eventData.recurringId = recurringId;
+      if (recurringRule) eventData.recurringRule = recurringRule;
 
       await setDoc(doc(db, 'events', eventId), eventData);
       
@@ -265,6 +275,9 @@ class FirebaseDataService {
       createdBy: firebaseEvent.createdBy,
       createdAt: this.convertTimestamp(firebaseEvent.createdAt),
       updatedAt: this.convertTimestamp(firebaseEvent.updatedAt),
+      isRecurring: firebaseEvent.isRecurring,
+      recurringId: firebaseEvent.recurringId,
+      recurringRule: firebaseEvent.recurringRule,
     };
   }
 

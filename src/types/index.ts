@@ -5,6 +5,14 @@ export interface User {
   partnerId?: string;
 }
 
+export interface RecurringRule {
+  type: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number; // 間隔（1週間ごと、2週間ごと）
+  endType: 'date' | 'count' | 'never';
+  endDate?: string;
+  endCount?: number;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -18,6 +26,10 @@ export interface Event {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // 繰り返し機能
+  isRecurring?: boolean;
+  recurringId?: string; // 繰り返しグループID
+  recurringRule?: RecurringRule;
 }
 
 export interface EventCategory {

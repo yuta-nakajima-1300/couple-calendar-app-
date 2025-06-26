@@ -17,7 +17,9 @@ import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
 import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
-import { EventCategory, DEFAULT_CATEGORIES } from '../types';
+import RecurringPicker from '../components/RecurringPicker';
+import { EventCategory, DEFAULT_CATEGORIES, RecurringRule } from '../types';
+import { generateRecurringEvents, generateRecurringId, getRecurringEventSummary } from '../utils/recurringEventGenerator';
 
 export default function EventCreateScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
@@ -34,6 +36,8 @@ export default function EventCreateScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showRecurringPicker, setShowRecurringPicker] = useState(false);
+  const [recurringRule, setRecurringRule] = useState<RecurringRule | undefined>(undefined);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -59,22 +63,61 @@ export default function EventCreateScreen() {
 
     try {
       setSaving(true);
-      await createEvent({
-        title: title.trim(),
-        description: description.trim(),
-        date,
-        endDate,
-        time: isAllDay ? undefined : time || undefined,
-        endTime: isAllDay ? undefined : endTime || undefined,
-        isAllDay,
-        category,
-        createdBy: 'current-user',
-      });
+
+      if (recurringRule) {
+        // 繰り返し予定の場合
+        const recurringId = generateRecurringId();
+        const baseEventData = {
+          title: title.trim(),
+          description: description.trim(),
+          time: isAllDay ? undefined : time || undefined,
+          endTime: isAllDay ? undefined : endTime || undefined,
+          isAllDay,
+          category,
+          createdBy: 'current-user',
+        };
+
+        const recurringEvents = generateRecurringEvents(
+          baseEventData,
+          date,
+          recurringRule,
+          recurringId
+        );
+
+        // 各繰り返し予定を作成
+        for (const eventData of recurringEvents) {
+          await createEvent(eventData);
+        }
+
+        if (Platform.OS === 'web') {
+          window.alert(`${recurringEvents.length}個の繰り返し予定を作成しました`);
+        } else {
+          Alert.alert('成功', `${recurringEvents.length}個の繰り返し予定を作成しました`);
+        }
+      } else {
+        // 通常の予定
+        await createEvent({
+          title: title.trim(),
+          description: description.trim(),
+          date,
+          endDate,
+          time: isAllDay ? undefined : time || undefined,
+          endTime: isAllDay ? undefined : endTime || undefined,
+          isAllDay,
+          category,
+          createdBy: 'current-user',
+        });
+      }
 
       // カレンダー画面に戻る
       navigation.navigate('CalendarHome');
     } catch (error) {
-      Alert.alert('エラー', '予定の作成に失敗しました');
+      console.error('Event creation error:', error);
+      if (Platform.OS === 'web') {
+        window.alert('予定の作成に失敗しました');
+      } else {
+        Alert.alert('エラー', '予定の作成に失敗しました');
+      }
     } finally {
       setSaving(false);
     }
@@ -224,6 +267,18 @@ export default function EventCreateScreen() {
           <Text style={styles.charCount}>{description.length}/200</Text>
         </View>
 
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>繰り返し</Text>
+          <TouchableOpacity 
+            style={styles.recurringButton} 
+            onPress={() => setShowRecurringPicker(true)}
+          >
+            <Text style={[styles.recurringText, !recurringRule && styles.placeholderText]}>
+              {recurringRule ? getRecurringEventSummary(recurringRule) : '繰り返しなし'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
       </ScrollView>
 
       <DateRangePicker
@@ -249,6 +304,13 @@ export default function EventCreateScreen() {
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
         allowEndTime={true}
+      />
+
+      <RecurringPicker
+        recurringRule={recurringRule}
+        onRuleChange={setRecurringRule}
+        visible={showRecurringPicker}
+        onClose={() => setShowRecurringPicker(false)}
       />
     </View>
   );
@@ -401,6 +463,18 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   timePickerText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  recurringButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  recurringText: {
     fontSize: 16,
     color: '#333',
   },
