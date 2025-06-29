@@ -64,123 +64,96 @@ export function filterEventsByDateRange(events: Event[], dateRange: DateRange): 
 }
 
 /**
- * 土日祝の色分けマーキングを生成（範囲限定版）
+ * 土日祝の色分けマーキングを生成（範囲限定版・軽量化）
  */
 export function generateWeekendHolidayMarking(dateRange: DateRange): Record<string, OptimizedMarkedDate> {
-  const operationId = performanceTracker.startOperation('generateWeekendHolidayMarking', {
-    startDate: dateRange.start,
-    endDate: dateRange.end,
-  });
-
   const dates: Record<string, OptimizedMarkedDate> = {};
   
-  try {
-    const startDate = new Date(dateRange.start + 'T00:00:00');
-    const endDate = new Date(dateRange.end + 'T00:00:00');
-    const currentDate = new Date(startDate);
+  const startDate = new Date(dateRange.start + 'T00:00:00');
+  const endDate = new Date(dateRange.end + 'T00:00:00');
+  const currentDate = new Date(startDate);
 
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
-      const dateColor = getDateColor(dateString);
-      
+  while (currentDate <= endDate) {
+    const dateString = currentDate.toISOString().split('T')[0];
+    const dateColor = getDateColor(dateString);
+    
+    // パフォーマンス最適化：土日祝のみマーキング
+    if (dateColor !== DATE_COLORS.weekday) {
       dates[dateString] = {
         customTextStyle: {
           color: dateColor,
-          fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+          fontWeight: 'bold'
         }
       };
-
-      currentDate.setDate(currentDate.getDate() + 1);
     }
 
-    return dates;
-  } finally {
-    performanceTracker.endOperation(operationId);
+    currentDate.setDate(currentDate.getDate() + 1);
   }
+
+  return dates;
 }
 
 /**
- * イベントマーキングを効率的に処理
+ * イベントマーキングを効率的に処理（軽量化版）
  */
 export function processEventMarkings(
   events: Event[], 
   dateRange: DateRange,
   baseMarkings: Record<string, OptimizedMarkedDate> = {}
 ): Record<string, OptimizedMarkedDate> {
-  const operationId = performanceTracker.startOperation('processEventMarkings', {
-    eventCount: events.length,
-    dateRange,
-  });
-
   const dates = { ...baseMarkings };
-  let processedEventCount = 0;
 
-  try {
-    for (const event of events) {
-      if (!event?.date) continue;
+  for (const event of events) {
+    if (!event?.date || !event.category?.color) continue;
 
-      processedEventCount++;
+    if (event.endDate) {
+      // 連日予定の処理（最適化版）
+      const startDate = new Date(event.date + 'T00:00:00');
+      const endDate = new Date(event.endDate + 'T00:00:00');
 
-      if (event.endDate) {
-        // 連日予定の処理（最適化版）
-        const startDate = new Date(event.date + 'T00:00:00');
-        const endDate = new Date(event.endDate + 'T00:00:00');
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        continue;
+      }
 
-        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-          console.warn('Invalid date in event:', event);
-          continue;
+      // 範囲外の日付をスキップして効率化
+      const rangeStart = new Date(dateRange.start + 'T00:00:00');
+      const rangeEnd = new Date(dateRange.end + 'T00:00:00');
+
+      const processStart = startDate < rangeStart ? rangeStart : startDate;
+      const processEnd = endDate > rangeEnd ? rangeEnd : endDate;
+
+      const currentDate = new Date(processStart);
+      while (currentDate <= processEnd) {
+        const dateString = currentDate.toISOString().split('T')[0];
+        
+        if (!dates[dateString]) {
+          dates[dateString] = {};
         }
-
-        // 範囲外の日付をスキップして効率化
-        const rangeStart = new Date(dateRange.start + 'T00:00:00');
-        const rangeEnd = new Date(dateRange.end + 'T00:00:00');
-
-        const processStart = startDate < rangeStart ? rangeStart : startDate;
-        const processEnd = endDate > rangeEnd ? rangeEnd : endDate;
-
-        const currentDate = new Date(processStart);
-        while (currentDate <= processEnd) {
-          const dateString = currentDate.toISOString().split('T')[0];
-          
-          if (!dates[dateString]) {
-            dates[dateString] = {};
-          }
-          
-          dates[dateString].dots = [
-            ...(dates[dateString].dots || []),
-            { color: event.category.color }
-          ];
-
-          currentDate.setDate(currentDate.getDate() + 1);
+        
+        if (!dates[dateString].dots) {
+          dates[dateString].dots = [];
         }
-      } else {
-        // 単日予定の処理
-        if (event.date >= dateRange.start && event.date <= dateRange.end) {
-          if (!dates[event.date]) {
-            dates[event.date] = {};
-          }
-          
-          dates[event.date].dots = [
-            ...(dates[event.date].dots || []),
-            { color: event.category.color }
-          ];
+        
+        dates[dateString].dots!.push({ color: event.category.color });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    } else {
+      // 単日予定の処理
+      if (event.date >= dateRange.start && event.date <= dateRange.end) {
+        if (!dates[event.date]) {
+          dates[event.date] = {};
         }
+        
+        if (!dates[event.date].dots) {
+          dates[event.date].dots = [];
+        }
+        
+        dates[event.date].dots!.push({ color: event.category.color });
       }
     }
-
-    return dates;
-  } catch (error) {
-    console.error('Error processing event markings:', error);
-    return dates;
-  } finally {
-    const metric = performanceTracker.endOperation(operationId);
-    if (metric) {
-      metric.metadata = {
-        ...metric.metadata,
-        processedEventCount,
-      };
-    }
   }
+
+  return dates;
 }
 
 /**
@@ -213,46 +186,41 @@ export function applySelectedDateMarking(
 }
 
 /**
- * 最適化されたカレンダーマーキング処理のメイン関数（キャッシュ対応）
+ * 最適化されたカレンダーマーキング処理のメイン関数（大幅軽量化版）
  */
 export function generateOptimizedMarkedDates(
   events: Event[],
   selectedDate: string | null = null,
   referenceDate: Date = new Date()
 ): CalendarProcessingResult {
-  const operationId = performanceTracker.startOperation('generateOptimizedMarkedDates', {
-    totalEvents: events?.length || 0,
-    selectedDate,
-  });
+  const calculationStart = performance.now();
 
   try {
     // 1. 表示範囲を計算
     const dateRange = calculateVisibleDateRange(referenceDate);
 
-    // 2. キャッシュから結果を取得を試行
-    const cachedResult = calendarCache.get(events, dateRange, selectedDate);
-    if (cachedResult) {
-      performanceTracker.endOperation(operationId);
-      return cachedResult;
+    // 2. キャッシュから結果を取得を試行（簡素化）
+    const cacheKey = `${events.length}_${dateRange.start}_${dateRange.end}_${selectedDate || 'none'}`;
+    if (typeof window !== 'undefined' && (window as any).__calendarCache) {
+      const cached = (window as any).__calendarCache[cacheKey];
+      if (cached && (Date.now() - cached.timestamp) < 30000) { // 30秒キャッシュ
+        return cached.result;
+      }
     }
 
-    // 3. キャッシュミス - 新しく計算
-    const calculationStart = performance.now();
-
-    // 4. 範囲内のイベントのみをフィルタリング
+    // 3. 範囲内のイベントのみをフィルタリング
     const filteredEvents = filterEventsByDateRange(events, dateRange);
 
-    // 5. 土日祝の基本マーキングを生成
+    // 4. 土日祝の基本マーキングを生成（軽量化）
     const baseMarkings = generateWeekendHolidayMarking(dateRange);
 
-    // 6. イベントマーキングを追加
+    // 5. イベントマーキングを追加（軽量化）
     const eventMarkings = processEventMarkings(filteredEvents, dateRange, baseMarkings);
 
-    // 7. 選択日マーキングを適用
+    // 6. 選択日マーキングを適用
     const finalMarkings = applySelectedDateMarking(eventMarkings, selectedDate);
 
     const calculationTime = performance.now() - calculationStart;
-    const metric = performanceTracker.endOperation(operationId);
 
     const result: CalendarProcessingResult = {
       markedDates: finalMarkings,
@@ -261,13 +229,22 @@ export function generateOptimizedMarkedDates(
       dateRange,
     };
 
-    // 8. 結果をキャッシュに保存
-    calendarCache.set(events, dateRange, selectedDate, result);
+    // 7. 簡素化されたキャッシュに保存
+    if (typeof window !== 'undefined') {
+      if (!(window as any).__calendarCache) {
+        (window as any).__calendarCache = {};
+      }
+      (window as any).__calendarCache[cacheKey] = {
+        result,
+        timestamp: Date.now()
+      };
+    }
 
     return result;
   } catch (error) {
-    performanceTracker.endOperation(operationId);
-    console.error('Error in generateOptimizedMarkedDates:', error);
+    if (__DEV__) {
+      console.error('Error in generateOptimizedMarkedDates:', error);
+    }
     
     // エラー時のフォールバック
     return {

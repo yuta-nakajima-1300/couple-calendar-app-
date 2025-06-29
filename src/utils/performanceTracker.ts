@@ -21,6 +21,11 @@ class PerformanceTracker {
    * 操作の開始を記録
    */
   startOperation(operationName: string, metadata?: Record<string, any>): string {
+    // 本番環境では軽量化
+    if (!__DEV__) {
+      return `${operationName}_${Date.now()}`;
+    }
+
     const operationId = `${operationName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     const metric: PerformanceMetric = {
@@ -29,8 +34,8 @@ class PerformanceTracker {
       metadata,
     };
 
-    // メモリ使用量を計測（可能な場合）
-    if ('memory' in performance) {
+    // メモリ使用量を計測（開発環境のみ）
+    if (__DEV__ && 'memory' in performance) {
       metric.memoryUsage = {
         before: (performance as any).memory.usedJSHeapSize,
         after: 0,
@@ -46,16 +51,21 @@ class PerformanceTracker {
    * 操作の終了を記録
    */
   endOperation(operationId: string): PerformanceMetric | null {
+    // 本番環境では何もしない
+    if (!__DEV__) {
+      return null;
+    }
+
     const metric = this.activeOperations.get(operationId);
     if (!metric) {
-      console.warn(`Operation ${operationId} not found`);
+      // 警告も本番では出力しない
       return null;
     }
 
     metric.endTime = performance.now();
     metric.duration = metric.endTime - metric.startTime;
 
-    // メモリ使用量を計測（可能な場合）
+    // メモリ使用量を計測（開発環境のみ）
     if (metric.memoryUsage && 'memory' in performance) {
       metric.memoryUsage.after = (performance as any).memory.usedJSHeapSize;
       metric.memoryUsage.delta = metric.memoryUsage.after - metric.memoryUsage.before;
@@ -64,12 +74,10 @@ class PerformanceTracker {
     this.metrics.push(metric);
     this.activeOperations.delete(operationId);
 
-    // 開発環境でのログ出力
-    if (__DEV__) {
-      console.log(`🔍 Performance: ${metric.operation}`, {
-        duration: `${metric.duration?.toFixed(2)}ms`,
-        memory: metric.memoryUsage ? `${(metric.memoryUsage.delta / 1024 / 1024).toFixed(2)}MB` : 'N/A',
-        metadata: metric.metadata,
+    // ログ出力を大幅に制限（重要な操作のみ）
+    if (metric.duration && metric.duration > 50) { // 50ms以上の操作のみログ
+      console.log(`⚡ Slow operation: ${metric.operation}`, {
+        duration: `${metric.duration.toFixed(2)}ms`,
       });
     }
 

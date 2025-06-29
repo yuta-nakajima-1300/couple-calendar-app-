@@ -1,6 +1,6 @@
 // カップル用カレンダーのコンテキスト
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   CoupleSettings,
@@ -143,27 +143,27 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
     await saveSettings(newSettings);
   };
 
-  // フィルター操作メソッド
-  const toggleFilter = (type: EventOwnerType) => {
+  // フィルター操作メソッド（メモ化）
+  const toggleFilter = useCallback((type: EventOwnerType) => {
     const newFilterState = {
       ...filterState,
       [type]: !filterState[type],
     };
     saveFilterState(newFilterState);
-  };
+  }, [filterState]);
 
-  const setAllFilters = (state: boolean) => {
+  const setAllFilters = useCallback((state: boolean) => {
     const newFilterState = {
       mine: state,
       partner: state,
       shared: state,
     };
     saveFilterState(newFilterState);
-  };
+  }, []);
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     saveFilterState(DEFAULT_FILTER_STATE);
-  };
+  }, []);
 
   // ユーティリティメソッド
   const getEventColor = (ownerType: EventOwnerType): string => {

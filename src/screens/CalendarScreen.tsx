@@ -23,8 +23,6 @@ import CalendarSkeleton from '../components/CalendarSkeleton';
 import EventFilterBar from '../components/EventFilterBar';
 import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
 import { generateOptimizedMarkedDates, CalendarProcessingResult } from '../utils/optimizedCalendarUtils';
-import { usePerformanceTracker } from '../utils/performanceTracker';
-import { useCalendarCache } from '../utils/calendarCache';
 import { useCouple } from '../contexts/CoupleContext';
 import { EventOwnerType } from '../types/coupleTypes';
 
@@ -45,8 +43,6 @@ export default function CalendarScreen() {
   });
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('');
-  const performanceTracker = usePerformanceTracker();
-  const calendarCache = useCalendarCache();
   const { filterState, isEventVisible, getEventColor, getEventOwnerInitial } = useCouple();
 
   const displayedEvents = useMemo(() => {
@@ -61,73 +57,34 @@ export default function CalendarScreen() {
     });
   }, [selectedDate, events, filterState, isEventVisible, getEventsByDate]);
 
-  // 最適化されたカレンダーマーキング処理（モバイル向け最適化）
+  // 大幅軽量化されたカレンダーマーキング処理
   useEffect(() => {
-    if (loading) {
-      setProcessingMessage('イベントを読み込み中...');
-      return;
-    }
+    if (loading) return;
 
-    const processCalendar = async () => {
+    const processCalendar = () => {
       setCalendarLoading(true);
-      
-      // モバイルでは処理メッセージを簡素化
-      if (isMobile) {
-        setProcessingMessage('読み込み中...');
-      } else {
-        setProcessingMessage('カレンダーを処理中...');
-      }
+      setProcessingMessage('');
 
       try {
-        // モバイルでは処理を軽量化
-        if (isMobile) {
-          await new Promise(resolve => setTimeout(resolve, 10));
-        } else {
-          await new Promise(resolve => requestAnimationFrame(resolve));
-          
-          // キャッシュ統計を表示（デスクトップのみ）
-          const cacheStats = calendarCache.getStats();
-          if (cacheStats.hits + cacheStats.misses > 0) {
-            setProcessingMessage(`キャッシュ確認中... (命中率: ${(cacheStats.hitRate * 100).toFixed(1)}%)`);
-          }
-        }
-
         const result = generateOptimizedMarkedDates(events, selectedDate);
         setCalendarResult(result);
-
-        // パフォーマンス情報をコンソールに出力（開発環境）
-        if (__DEV__ && !isMobile) {
-          const updatedStats = calendarCache.getStats();
-          console.log('📊 Calendar Performance:', {
-            processedEvents: result.processedEventCount,
-            processingTime: `${result.processingTime.toFixed(2)}ms`,
-            dateRange: `${result.dateRange.start} to ${result.dateRange.end}`,
-            cacheHitRate: `${(updatedStats.hitRate * 100).toFixed(1)}%`,
-            cacheSize: updatedStats.size,
-          });
+        
+        // 開発環境での簡易ログ（50ms以上のみ）
+        if (__DEV__ && result.processingTime > 50) {
+          console.log(`⚡ Calendar processed: ${result.processingTime.toFixed(2)}ms`);
         }
-
-        setProcessingMessage('');
       } catch (error) {
-        console.error('Calendar processing error:', error);
-        setProcessingMessage('エラーが発生しました');
+        if (__DEV__) {
+          console.error('Calendar processing error:', error);
+        }
       } finally {
         setCalendarLoading(false);
       }
     };
 
-    // イベント数が多い場合は処理をより分割
-    const eventCount = events?.length || 0;
-    if (eventCount > (isMobile ? 50 : 100)) {
-      setProcessingMessage(isMobile ? '読み込み中...' : `大量のイベントを処理中... (${eventCount}件)`);
-      // モバイルでは更に短時間で実行
-      const delay = isMobile ? 20 : 50;
-      const timer = setTimeout(processCalendar, delay);
-      return () => clearTimeout(timer);
-    } else {
-      processCalendar();
-    }
-  }, [events, selectedDate, loading, calendarCache, isMobile]);
+    // 即座に実行（デバウンスなし）
+    processCalendar();
+  }, [events, selectedDate, loading]);
 
   const renderEvent = ({ item }: { item: Event }) => {
     const ownerType = (item.ownerType || 'shared') as EventOwnerType;
@@ -177,8 +134,8 @@ export default function CalendarScreen() {
   };
 
   // 初回ローディング時はスケルトンスクリーンを表示
-  if ((loading || calendarLoading) && Object.keys(calendarResult.markedDates).length === 0) {
-    return <CalendarSkeleton processingMessage={processingMessage} />;
+  if (loading) {
+    return <CalendarSkeleton processingMessage="読み込み中..." />;
   }
 
   return (
