@@ -1,10 +1,26 @@
 [build]
-  command = "npm install --legacy-peer-deps --production=false && npx expo export --platform web"
+  command = "npm install --production=false && npx expo export --platform web"
   publish = "dist/"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   NPM_CONFIG_PRODUCTION = "false"
+
+# Local development settings
+[dev]
+  command = "npm run web"
+  port = 3000
+  targetPort = 8081
+  publish = "dist"
+  autoLaunch = true
+
+# Deploy previews settings
+[context.deploy-preview]
+  command = "npm install --production=false && npx expo export --platform web"
+  
+# Branch deploy settings (for feature branches)
+[context.branch-deploy]
+  command = "npm install --production=false && npx expo export --platform web"
 
 [[redirects]]
   from = "/*"

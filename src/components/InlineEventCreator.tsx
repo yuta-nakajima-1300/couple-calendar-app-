@@ -162,6 +162,10 @@ export default function InlineEventCreator({
               onChangeText={setTitle}
               maxLength={50}
               autoFocus={true}
+              autoCorrect={false}
+              spellCheck={false}
+              keyboardType="default"
+              returnKeyType="done"
             />
           </View>
 
@@ -216,6 +220,10 @@ export default function InlineEventCreator({
               numberOfLines={3}
               textAlignVertical="top"
               maxLength={200}
+              autoCorrect={false}
+              spellCheck={false}
+              keyboardType="default"
+              returnKeyType="done"
             />
             <Text style={styles.charCount}>{description.length}/200</Text>
           </View>

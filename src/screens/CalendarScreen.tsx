@@ -17,6 +17,7 @@ import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
 import { Event } from '../types';
 import { loadSampleData, clearAllData } from '../utils/sampleData';
 import InlineEventCreator from '../components/InlineEventCreator';
+import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
 
 export default function CalendarScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
@@ -32,6 +33,30 @@ export default function CalendarScreen() {
 
   const markedDates = useMemo(() => {
     const dates: any = {};
+    
+    // 現在表示中の月の全日付に土日祝の色分けを適用
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+    
+    // 前月・今月・来月の3ヶ月分の日付を色分け
+    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
+      const targetMonth = new Date(currentYear, currentMonth + monthOffset, 1);
+      const daysInMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
+      
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${targetMonth.getFullYear()}-${String(targetMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateColor = getDateColor(dateString);
+        
+        dates[dateString] = {
+          ...dates[dateString],
+          customTextStyle: {
+            color: dateColor,
+            fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+          }
+        };
+      }
+    }
     
     // Mark dates with events - 安全性チェックを追加
     if (!Array.isArray(events)) return dates;
@@ -77,13 +102,18 @@ export default function CalendarScreen() {
       }
     });
 
-    // Mark selected date
+    // Mark selected date（土日祝の色分けを保持）
     if (selectedDate) {
+      const dateColor = getDateColor(selectedDate);
       dates[selectedDate] = {
         ...dates[selectedDate],
         selected: true,
         selectedColor: '#007AFF',
-        selectedTextColor: '#FFFFFF'
+        selectedTextColor: '#FFFFFF',
+        customTextStyle: {
+          ...dates[selectedDate]?.customTextStyle,
+          color: '#FFFFFF', // 選択時は白文字
+        }
       };
     }
 
@@ -97,8 +127,10 @@ export default function CalendarScreen() {
     >
       <View style={styles.eventContent}>
         <View style={styles.eventHeader}>
-          <Text style={styles.eventTitle}>{item.title}</Text>
-          <Text style={styles.categoryIcon}>{item.category.icon}</Text>
+          <Text style={styles.eventTitle} numberOfLines={2} ellipsizeMode="tail">
+            {item.title || '無題'}
+          </Text>
+          <Text style={styles.categoryIcon}>{item.category?.icon || '📅'}</Text>
         </View>
         {item.isAllDay ? (
           <Text style={styles.eventTime}>終日</Text>
@@ -188,9 +220,34 @@ export default function CalendarScreen() {
       />
 
       <View style={styles.eventsSection}>
-        <Text style={styles.eventsTitle}>
-          {selectedDate ? `${selectedDate}の予定` : '今日の予定'}
-        </Text>
+        <View style={styles.eventsSectionHeader}>
+          <Text style={styles.eventsTitle}>
+            {selectedDate ? `${selectedDate}の予定` : '今日の予定'}
+          </Text>
+          {selectedDate && (() => {
+            const dateInfo = getDateInfo(selectedDate);
+            if (dateInfo.holidayName) {
+              return (
+                <Text style={[styles.holidayLabel, { color: dateInfo.color }]}>
+                  {dateInfo.holidayName}
+                </Text>
+              );
+            } else if (dateInfo.dateType === 'saturday') {
+              return (
+                <Text style={[styles.holidayLabel, { color: dateInfo.color }]}>
+                  土曜日
+                </Text>
+              );
+            } else if (dateInfo.dateType === 'sunday') {
+              return (
+                <Text style={[styles.holidayLabel, { color: dateInfo.color }]}>
+                  日曜日
+                </Text>
+              );
+            }
+            return null;
+          })()}
+        </View>
         
         {loading ? (
           <ActivityIndicator size="large" color="#ff6b6b" style={styles.loading} />
@@ -348,5 +405,19 @@ const styles = StyleSheet.create({
   },
   loading: {
     marginTop: 40,
+  },
+  eventsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  holidayLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
   },
 });
