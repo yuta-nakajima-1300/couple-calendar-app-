@@ -26,6 +26,8 @@ export interface Event {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  // カップル用拡張フィールド
+  ownerType?: 'mine' | 'partner' | 'shared';
   // 繰り返し機能
   isRecurring?: boolean;
   recurringId?: string; // 繰り返しグループID

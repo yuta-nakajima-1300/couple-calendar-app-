@@ -17,120 +17,129 @@ import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
 import { Event } from '../types';
 import { loadSampleData, clearAllData } from '../utils/sampleData';
 import InlineEventCreator from '../components/InlineEventCreator';
+import CalendarSkeleton from '../components/CalendarSkeleton';
+import EventFilterBar from '../components/EventFilterBar';
 import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
+import { generateOptimizedMarkedDates, CalendarProcessingResult } from '../utils/optimizedCalendarUtils';
+import { usePerformanceTracker } from '../utils/performanceTracker';
+import { useCalendarCache } from '../utils/calendarCache';
+import { useCouple } from '../contexts/CoupleContext';
+import { EventOwnerType } from '../types/coupleTypes';
 
 export default function CalendarScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
   const { events, loading, getEventsByDate } = useFirebaseEvents();
   const [selectedDate, setSelectedDate] = useState('');
   const [showInlineCreator, setShowInlineCreator] = useState(false);
+  const [calendarResult, setCalendarResult] = useState<CalendarProcessingResult>({
+    markedDates: {},
+    processedEventCount: 0,
+    processingTime: 0,
+    dateRange: { start: '', end: '' }
+  });
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [processingMessage, setProcessingMessage] = useState('');
+  const performanceTracker = usePerformanceTracker();
+  const calendarCache = useCalendarCache();
+  const { filterState, isEventVisible, getEventColor, getEventOwnerInitial } = useCouple();
 
   const displayedEvents = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     const targetDate = selectedDate || today;
-    return getEventsByDate(targetDate);
-  }, [selectedDate, events]);
-
-  const markedDates = useMemo(() => {
-    const dates: any = {};
+    const allEvents = getEventsByDate(targetDate);
     
-    // 現在表示中の月の全日付に土日祝の色分けを適用
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    
-    // 前月・今月・来月の3ヶ月分の日付を色分け
-    for (let monthOffset = -1; monthOffset <= 1; monthOffset++) {
-      const targetMonth = new Date(currentYear, currentMonth + monthOffset, 1);
-      const daysInMonth = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).getDate();
-      
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateString = `${targetMonth.getFullYear()}-${String(targetMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dateColor = getDateColor(dateString);
-        
-        dates[dateString] = {
-          ...dates[dateString],
-          customTextStyle: {
-            color: dateColor,
-            fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
-          }
-        };
-      }
-    }
-    
-    // Mark dates with events - 安全性チェックを追加
-    if (!Array.isArray(events)) return dates;
-    
-    events.forEach(event => {
-      if (!event || !event.date) return; // 不正なイベントをスキップ
-      try {
-        if (event.endDate) {
-          // 連日予定の場合
-          const startDate = new Date(event.date);
-          const endDate = new Date(event.endDate);
-          
-          // 無効な日付をチェック
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.warn('Invalid date in event:', event);
-            return;
-          }
-          
-          const current = new Date(startDate);
-          
-          while (current <= endDate) {
-            const dateString = current.toISOString().split('T')[0];
-            const isStart = dateString === event.date;
-            const isEnd = dateString === event.endDate;
-            
-            dates[dateString] = {
-              ...dates[dateString],
-              dots: [...(dates[dateString]?.dots || []), { color: event.category.color }]
-            };
-            current.setDate(current.getDate() + 1);
-          }
-        } else {
-          // 単日予定
-          if (event.date && event.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            dates[event.date] = {
-              ...dates[event.date],
-              dots: [...(dates[event.date]?.dots || []), { color: event.category.color }]
-            };
-          }
-        }
-      } catch (error) {
-        console.error('Error processing event for calendar:', event, error);
-      }
+    // フィルターを適用
+    return allEvents.filter(event => {
+      const ownerType = event.ownerType || 'shared'; // デフォルトは共通予定
+      return isEventVisible(ownerType);
     });
+  }, [selectedDate, events, filterState, isEventVisible, getEventsByDate]);
 
-    // Mark selected date（土日祝の色分けを保持）
-    if (selectedDate) {
-      const dateColor = getDateColor(selectedDate);
-      dates[selectedDate] = {
-        ...dates[selectedDate],
-        selected: true,
-        selectedColor: '#007AFF',
-        selectedTextColor: '#FFFFFF',
-        customTextStyle: {
-          ...dates[selectedDate]?.customTextStyle,
-          color: '#FFFFFF', // 選択時は白文字
-        }
-      };
+  // 最適化されたカレンダーマーキング処理（非同期版）
+  useEffect(() => {
+    if (loading) {
+      setProcessingMessage('イベントを読み込み中...');
+      return;
     }
 
-    return dates;
-  }, [events, selectedDate]);
+    const processCalendar = async () => {
+      setCalendarLoading(true);
+      setProcessingMessage('カレンダーを処理中...');
 
-  const renderEvent = ({ item }: { item: Event }) => (
-    <TouchableOpacity 
-      style={[styles.eventItem, { borderLeftColor: item.category.color }]}
-      onPress={() => navigation.navigate('EventEdit', { eventId: item.id })}
-    >
-      <View style={styles.eventContent}>
-        <View style={styles.eventHeader}>
-          <Text style={styles.eventTitle} numberOfLines={2} ellipsizeMode="tail">
-            {item.title || '無題'}
-          </Text>
-          <Text style={styles.categoryIcon}>{item.category?.icon || '📅'}</Text>
+      try {
+        // 重い処理を次のフレームに遅延
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
+        // キャッシュ統計を表示
+        const cacheStats = calendarCache.getStats();
+        if (cacheStats.hits + cacheStats.misses > 0) {
+          setProcessingMessage(`キャッシュ確認中... (命中率: ${(cacheStats.hitRate * 100).toFixed(1)}%)`);
+        }
+
+        const result = generateOptimizedMarkedDates(events, selectedDate);
+        setCalendarResult(result);
+
+        // パフォーマンス情報をコンソールに出力（開発環境）
+        if (__DEV__) {
+          const updatedStats = calendarCache.getStats();
+          console.log('📊 Calendar Performance:', {
+            processedEvents: result.processedEventCount,
+            processingTime: `${result.processingTime.toFixed(2)}ms`,
+            dateRange: `${result.dateRange.start} to ${result.dateRange.end}`,
+            cacheHitRate: `${(updatedStats.hitRate * 100).toFixed(1)}%`,
+            cacheSize: updatedStats.size,
+          });
+        }
+
+        setProcessingMessage('');
+      } catch (error) {
+        console.error('Calendar processing error:', error);
+        setProcessingMessage('処理中にエラーが発生しました');
+      } finally {
+        setCalendarLoading(false);
+      }
+    };
+
+    // イベント数が多い場合は処理をより分割
+    const eventCount = events?.length || 0;
+    if (eventCount > 100) {
+      setProcessingMessage(`大量のイベントを処理中... (${eventCount}件)`);
+      // 重い処理は少し遅延して実行
+      const timer = setTimeout(processCalendar, 50);
+      return () => clearTimeout(timer);
+    } else {
+      processCalendar();
+    }
+  }, [events, selectedDate, loading, calendarCache]);
+
+  const renderEvent = ({ item }: { item: Event }) => {
+    const ownerType = (item.ownerType || 'shared') as EventOwnerType;
+    const ownerColor = getEventColor(ownerType);
+    const ownerInitial = getEventOwnerInitial(ownerType);
+    
+    return (
+      <TouchableOpacity 
+        style={[
+          styles.eventItem, 
+          { borderLeftColor: ownerColor, borderLeftWidth: 4 },
+          { backgroundColor: `${ownerColor}08` } // 薄い背景色
+        ]}
+        onPress={() => navigation.navigate('EventEdit', { eventId: item.id })}
+      >
+        <View style={styles.eventContent}>
+          <View style={styles.eventHeader}>
+            <Text style={styles.eventTitle} numberOfLines={2} ellipsizeMode="tail">
+              {item.title || '無題'}
+            </Text>
+            <View style={styles.eventIcons}>
+              {/* 所有者アイコン */}
+              <View style={[styles.ownerBadge, { backgroundColor: ownerColor }]}>
+                <Text style={styles.ownerBadgeText}>{ownerInitial}</Text>
+              </View>
+              {/* カテゴリアイコン */}
+              <Text style={styles.categoryIcon}>{item.category?.icon || '📅'}</Text>
+            </View>
+          </View>
         </View>
         {item.isAllDay ? (
           <Text style={styles.eventTime}>終日</Text>
@@ -146,9 +155,14 @@ export default function CalendarScreen() {
             {item.date} - {item.endDate}
           </Text>
         )}
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
+
+  // 初回ローディング時はスケルトンスクリーンを表示
+  if ((loading || calendarLoading) && Object.keys(calendarResult.markedDates).length === 0) {
+    return <CalendarSkeleton processingMessage={processingMessage} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -169,6 +183,9 @@ export default function CalendarScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* フィルターバー */}
+      <EventFilterBar />
 
       <Calendar
         style={styles.calendar}
@@ -197,7 +214,7 @@ export default function CalendarScreen() {
         onDayPress={(day) => {
           setSelectedDate(day.dateString);
         }}
-        markedDates={markedDates}
+        markedDates={calendarResult.markedDates}
         markingType="multi-dot"
         monthFormat={'yyyy年 MM月'}
         hideExtraDays={true}
@@ -419,5 +436,30 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  },
+  eventIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ownerBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  ownerBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

@@ -18,12 +18,16 @@ import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
 import RecurringPicker from '../components/RecurringPicker';
+import EventOwnershipPicker from '../components/EventOwnershipPicker';
 import { EventCategory, DEFAULT_CATEGORIES, RecurringRule } from '../types';
+import { EventOwnerType } from '../types/coupleTypes';
+import { useCouple } from '../contexts/CoupleContext';
 import { generateRecurringEvents, generateRecurringId, getRecurringEventSummary } from '../utils/recurringEventGenerator';
 
 export default function EventCreateScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
   const { createEvent } = useFirebaseEvents();
+  const { settings } = useCouple();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -38,6 +42,7 @@ export default function EventCreateScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showRecurringPicker, setShowRecurringPicker] = useState(false);
   const [recurringRule, setRecurringRule] = useState<RecurringRule | undefined>(undefined);
+  const [ownerType, setOwnerType] = useState<EventOwnerType>(settings.defaultEventType);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -74,6 +79,7 @@ export default function EventCreateScreen() {
           endTime: isAllDay ? undefined : endTime || undefined,
           isAllDay,
           category,
+          ownerType,
           createdBy: 'current-user',
         };
 
@@ -105,6 +111,7 @@ export default function EventCreateScreen() {
           endTime: isAllDay ? undefined : endTime || undefined,
           isAllDay,
           category,
+          ownerType,
           createdBy: 'current-user',
         });
       }
@@ -285,6 +292,14 @@ export default function EventCreateScreen() {
               {recurringRule ? getRecurringEventSummary(recurringRule) : '繰り返しなし'}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>予定の種類</Text>
+          <EventOwnershipPicker
+            selectedType={ownerType}
+            onTypeChange={setOwnerType}
+          />
         </View>
 
       </ScrollView>
