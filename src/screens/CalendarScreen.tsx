@@ -7,7 +7,9 @@ import {
   FlatList,
   SafeAreaView,
   ActivityIndicator,
-  Alert 
+  Alert,
+  Dimensions,
+  Platform
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +27,10 @@ import { usePerformanceTracker } from '../utils/performanceTracker';
 import { useCalendarCache } from '../utils/calendarCache';
 import { useCouple } from '../contexts/CoupleContext';
 import { EventOwnerType } from '../types/coupleTypes';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const isSmallScreen = screenWidth < 375;
+const isMobile = Platform.OS !== 'web' || screenWidth < 768;
 
 export default function CalendarScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
@@ -55,7 +61,7 @@ export default function CalendarScreen() {
     });
   }, [selectedDate, events, filterState, isEventVisible, getEventsByDate]);
 
-  // 最適化されたカレンダーマーキング処理（非同期版）
+  // 最適化されたカレンダーマーキング処理（モバイル向け最適化）
   useEffect(() => {
     if (loading) {
       setProcessingMessage('イベントを読み込み中...');
@@ -64,23 +70,33 @@ export default function CalendarScreen() {
 
     const processCalendar = async () => {
       setCalendarLoading(true);
-      setProcessingMessage('カレンダーを処理中...');
+      
+      // モバイルでは処理メッセージを簡素化
+      if (isMobile) {
+        setProcessingMessage('読み込み中...');
+      } else {
+        setProcessingMessage('カレンダーを処理中...');
+      }
 
       try {
-        // 重い処理を次のフレームに遅延
-        await new Promise(resolve => requestAnimationFrame(resolve));
-
-        // キャッシュ統計を表示
-        const cacheStats = calendarCache.getStats();
-        if (cacheStats.hits + cacheStats.misses > 0) {
-          setProcessingMessage(`キャッシュ確認中... (命中率: ${(cacheStats.hitRate * 100).toFixed(1)}%)`);
+        // モバイルでは処理を軽量化
+        if (isMobile) {
+          await new Promise(resolve => setTimeout(resolve, 10));
+        } else {
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          
+          // キャッシュ統計を表示（デスクトップのみ）
+          const cacheStats = calendarCache.getStats();
+          if (cacheStats.hits + cacheStats.misses > 0) {
+            setProcessingMessage(`キャッシュ確認中... (命中率: ${(cacheStats.hitRate * 100).toFixed(1)}%)`);
+          }
         }
 
         const result = generateOptimizedMarkedDates(events, selectedDate);
         setCalendarResult(result);
 
         // パフォーマンス情報をコンソールに出力（開発環境）
-        if (__DEV__) {
+        if (__DEV__ && !isMobile) {
           const updatedStats = calendarCache.getStats();
           console.log('📊 Calendar Performance:', {
             processedEvents: result.processedEventCount,
@@ -94,7 +110,7 @@ export default function CalendarScreen() {
         setProcessingMessage('');
       } catch (error) {
         console.error('Calendar processing error:', error);
-        setProcessingMessage('処理中にエラーが発生しました');
+        setProcessingMessage('エラーが発生しました');
       } finally {
         setCalendarLoading(false);
       }
@@ -102,15 +118,16 @@ export default function CalendarScreen() {
 
     // イベント数が多い場合は処理をより分割
     const eventCount = events?.length || 0;
-    if (eventCount > 100) {
-      setProcessingMessage(`大量のイベントを処理中... (${eventCount}件)`);
-      // 重い処理は少し遅延して実行
-      const timer = setTimeout(processCalendar, 50);
+    if (eventCount > (isMobile ? 50 : 100)) {
+      setProcessingMessage(isMobile ? '読み込み中...' : `大量のイベントを処理中... (${eventCount}件)`);
+      // モバイルでは更に短時間で実行
+      const delay = isMobile ? 20 : 50;
+      const timer = setTimeout(processCalendar, delay);
       return () => clearTimeout(timer);
     } else {
       processCalendar();
     }
-  }, [events, selectedDate, loading, calendarCache]);
+  }, [events, selectedDate, loading, calendarCache, isMobile]);
 
   const renderEvent = ({ item }: { item: Event }) => {
     const ownerType = (item.ownerType || 'shared') as EventOwnerType;
@@ -185,7 +202,7 @@ export default function CalendarScreen() {
       </View>
 
       {/* フィルターバー */}
-      <EventFilterBar />
+      <EventFilterBar compact={isMobile} />
 
       <Calendar
         style={styles.calendar}
@@ -207,9 +224,9 @@ export default function CalendarScreen() {
           textDayFontWeight: '300',
           textMonthFontWeight: 'bold',
           textDayHeaderFontWeight: '300',
-          textDayFontSize: 16,
-          textMonthFontSize: 16,
-          textDayHeaderFontSize: 13
+          textDayFontSize: isMobile ? 14 : 16,
+          textMonthFontSize: isMobile ? 14 : 16,
+          textDayHeaderFontSize: isMobile ? 11 : 13
         }}
         onDayPress={(day) => {
           setSelectedDate(day.dateString);
@@ -301,14 +318,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: isMobile ? 16 : 20,
+    paddingVertical: isMobile ? 12 : 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    ...(Platform.OS === 'ios' && {
+      paddingTop: isMobile ? 8 : 16,
+    }),
   },
   title: {
-    fontSize: 20,
+    fontSize: isMobile ? 18 : 20,
     fontWeight: 'bold',
     color: '#333',
   },
@@ -318,35 +338,36 @@ const styles = StyleSheet.create({
   },
   quickAddButton: {
     backgroundColor: '#fff',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: isMobile ? 10 : 12,
+    paddingVertical: isMobile ? 10 : 8,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#ff6b6b',
-    marginRight: 12,
+    marginRight: isMobile ? 8 : 12,
+    minHeight: 44, // iOS Human Interface Guidelines minimum touch target
   },
   quickAddButtonText: {
     color: '#ff6b6b',
-    fontSize: 14,
+    fontSize: isMobile ? 12 : 14,
     fontWeight: 'bold',
   },
   addButton: {
     backgroundColor: '#ff6b6b',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: isMobile ? 44 : 40,
+    height: isMobile ? 44 : 40,
+    borderRadius: isMobile ? 22 : 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   addButtonText: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: isMobile ? 20 : 24,
     fontWeight: 'bold',
   },
   calendar: {
     backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
+    marginHorizontal: isMobile ? 8 : 16,
+    marginTop: isMobile ? 8 : 16,
     borderRadius: 8,
     elevation: 2,
     shadowColor: '#000',
@@ -361,13 +382,13 @@ const styles = StyleSheet.create({
   },
   eventsSection: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 20,
+    paddingHorizontal: isMobile ? 8 : 16,
+    paddingTop: isMobile ? 12 : 20,
   },
   eventsTitle: {
-    fontSize: 18,
+    fontSize: isMobile ? 16 : 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: isMobile ? 8 : 12,
     color: '#333',
   },
   eventsList: {
@@ -375,8 +396,8 @@ const styles = StyleSheet.create({
   },
   eventItem: {
     backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 8,
+    padding: isMobile ? 12 : 16,
+    marginBottom: isMobile ? 6 : 8,
     borderRadius: 8,
     borderLeftWidth: 4,
     flexDirection: 'row',
@@ -386,6 +407,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    minHeight: 44, // Minimum touch target size
   },
   eventContent: {
     flex: 1,
@@ -397,21 +419,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   eventTitle: {
-    fontSize: 16,
+    fontSize: isMobile ? 14 : 16,
     color: '#333',
     fontWeight: '500',
     flex: 1,
   },
   categoryIcon: {
-    fontSize: 16,
+    fontSize: isMobile ? 14 : 16,
   },
   eventTime: {
-    fontSize: 14,
+    fontSize: isMobile ? 12 : 14,
     color: '#666',
     marginBottom: 2,
   },
   eventDuration: {
-    fontSize: 12,
+    fontSize: isMobile ? 10 : 12,
     color: '#999',
   },
   noEvents: {
@@ -443,9 +465,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ownerBadge: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: isMobile ? 18 : 20,
+    height: isMobile ? 18 : 20,
+    borderRadius: isMobile ? 9 : 10,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -458,7 +480,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   ownerBadgeText: {
-    fontSize: 10,
+    fontSize: isMobile ? 8 : 10,
     fontWeight: 'bold',
     color: '#fff',
   },

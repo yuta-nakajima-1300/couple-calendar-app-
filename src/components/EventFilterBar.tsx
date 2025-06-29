@@ -1,9 +1,13 @@
 // イベントフィルターバーコンポーネント
 
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Platform } from 'react-native';
 import { EventOwnerType } from '../types/coupleTypes';
 import { useCouple } from '../contexts/CoupleContext';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isSmallScreen = screenWidth < 375;
+const isMobile = Platform.OS !== 'web' || screenWidth < 768;
 
 interface EventFilterBarProps {
   style?: any;
@@ -13,8 +17,8 @@ interface EventFilterBarProps {
 
 export default function EventFilterBar({ 
   style, 
-  showLabels = true, 
-  compact = false 
+  showLabels = !isSmallScreen, 
+  compact = isMobile 
 }: EventFilterBarProps) {
   const {
     filterState,
@@ -212,14 +216,14 @@ export default function EventFilterBar({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: isMobile ? 8 : 12,
+    paddingHorizontal: isMobile ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
   compactContainer: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   scrollContent: {
     alignItems: 'center',
@@ -228,19 +232,21 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
+    paddingHorizontal: isMobile ? 10 : 12,
+    paddingVertical: isMobile ? 10 : 8,
+    marginRight: isMobile ? 6 : 8,
+    borderRadius: isMobile ? 18 : 20,
     borderWidth: 2,
     borderColor: '#e0e0e0',
     backgroundColor: '#f8f9fa',
     position: 'relative',
+    minHeight: 44, // Minimum touch target
   },
   compactButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    borderRadius: 14,
+    minHeight: 40,
   },
   activeButton: {
     borderWidth: 2,
