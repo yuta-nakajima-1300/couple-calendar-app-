@@ -131,7 +131,14 @@ export default function DateRangePicker({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal 
+      visible={visible} 
+      animationType="slide" 
+      presentationStyle="pageSheet"
+      accessible={true}
+      accessibilityViewIsModal={true}
+      aria-hidden={!visible}
+    >
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={handleCancel}>

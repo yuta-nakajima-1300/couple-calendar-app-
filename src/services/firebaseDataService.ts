@@ -16,6 +16,14 @@ import {
 import { db } from '../config/firebase';
 import { Event, EventCategory, DEFAULT_CATEGORIES } from '../types';
 
+// Firebase接続チェック関数
+const checkFirebaseConnection = () => {
+  if (!db) {
+    throw new Error('Firebase Firestore not initialized. Please check your configuration.');
+  }
+  return db;
+};
+
 export interface FirebaseEvent {
   id: string;
   title: string;
@@ -66,7 +74,8 @@ class FirebaseDataService {
     recurringRule?: any
   ): Promise<FirebaseEvent> {
     try {
-      const eventId = doc(collection(db, 'events')).id;
+      const database = checkFirebaseConnection();
+      const eventId = doc(collection(database, 'events')).id;
       
       const eventData: Partial<FirebaseEvent> = {
         id: eventId,
@@ -89,7 +98,7 @@ class FirebaseDataService {
       if (recurringId) eventData.recurringId = recurringId;
       if (recurringRule) eventData.recurringRule = recurringRule;
 
-      await setDoc(doc(db, 'events', eventId), eventData);
+      await setDoc(doc(database, 'events', eventId), eventData);
       
       return eventData as FirebaseEvent;
     } catch (error) {
@@ -104,7 +113,8 @@ class FirebaseDataService {
     updates: Partial<FirebaseEvent>
   ): Promise<boolean> {
     try {
-      const eventRef = doc(db, 'events', eventId);
+      const database = checkFirebaseConnection();
+      const eventRef = doc(database, 'events', eventId);
       const eventDoc = await getDoc(eventRef);
       
       if (!eventDoc.exists()) {
@@ -136,7 +146,8 @@ class FirebaseDataService {
       console.log('firebaseDataService.deleteEvent が開始されました');
       console.log('パラメータ:', { eventId, userId, coupleId });
       
-      const eventRef = doc(db, 'events', eventId);
+      const database = checkFirebaseConnection();
+      const eventRef = doc(database, 'events', eventId);
       console.log('イベント参照を作成しました:', eventRef.path);
       
       const eventDoc = await getDoc(eventRef);
@@ -181,7 +192,8 @@ class FirebaseDataService {
 
   async getUserEvents(userId: string, coupleId?: string): Promise<Event[]> {
     try {
-      const eventsRef = collection(db, 'events');
+      const database = checkFirebaseConnection();
+      const eventsRef = collection(database, 'events');
       let q;
 
       if (coupleId) {
@@ -220,7 +232,8 @@ class FirebaseDataService {
     coupleId: string | undefined,
     callback: (events: Event[]) => void
   ) {
-    const eventsRef = collection(db, 'events');
+    const database = checkFirebaseConnection();
+    const eventsRef = collection(database, 'events');
     let q;
 
     if (coupleId) {
@@ -258,7 +271,8 @@ class FirebaseDataService {
     description?: string
   ): Promise<FirebaseAnniversary> {
     try {
-      const anniversaryId = doc(collection(db, 'anniversaries')).id;
+      const database = checkFirebaseConnection();
+      const anniversaryId = doc(collection(database, 'anniversaries')).id;
       
       const anniversaryData: FirebaseAnniversary = {
         id: anniversaryId,
@@ -272,7 +286,7 @@ class FirebaseDataService {
         updatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, 'anniversaries', anniversaryId), anniversaryData);
+      await setDoc(doc(database, 'anniversaries', anniversaryId), anniversaryData);
       
       return anniversaryData;
     } catch (error) {

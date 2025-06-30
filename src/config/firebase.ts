@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // Firebase configuration
@@ -17,10 +17,31 @@ import { getStorage } from 'firebase/storage';
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
+// Initialize Firebase services with error handling
 export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+
+let db: any;
+let storage: any;
+
+try {
+  db = getFirestore(app);
+  storage = getStorage(app);
+} catch (error) {
+  console.warn('Firebase initialization warning:', error);
+  // Retry initialization after a short delay for web environments
+  if (typeof window !== 'undefined') {
+    setTimeout(() => {
+      try {
+        db = getFirestore(app);
+        storage = getStorage(app);
+      } catch (retryError) {
+        console.error('Firebase retry initialization failed:', retryError);
+      }
+    }, 1000);
+  }
+}
+
+export { db, storage };
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

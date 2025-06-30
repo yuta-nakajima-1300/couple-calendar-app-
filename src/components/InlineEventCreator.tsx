@@ -136,6 +136,9 @@ export default function InlineEventCreator({
       animationType="slide" 
       presentationStyle="pageSheet"
       onRequestClose={handleCancel}
+      accessible={true}
+      accessibilityViewIsModal={true}
+      aria-hidden={!visible}
     >
       <View style={styles.container}>
         <View style={styles.header}>
