@@ -17,7 +17,7 @@ import {
   updateDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../config/firebase';
+import { auth, getSafeDb, googleProvider } from '../config/firebase';
 import { Platform } from 'react-native';
 
 export interface UserProfile {
@@ -67,7 +67,9 @@ class AuthService {
   // ユーザープロフィールをFirestoreに保存
   async saveUserProfile(user: User): Promise<void> {
     try {
-      const userRef = doc(db, 'users', user.uid);
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      const userRef = doc(database, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       
       if (!userDoc.exists()) {
@@ -104,7 +106,9 @@ class AuthService {
   // ユーザープロフィール取得
   async getUserProfile(uid: string): Promise<UserProfile | null> {
     try {
-      const userRef = doc(db, 'users', uid);
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      const userRef = doc(database, 'users', uid);
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
@@ -121,7 +125,9 @@ class AuthService {
   // 招待コードでパートナーを検索
   async findUserByInviteCode(inviteCode: string): Promise<UserProfile | null> {
     try {
-      const usersRef = collection(db, 'users');
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      const usersRef = collection(database, 'users');
       const q = query(usersRef, where('inviteCode', '==', inviteCode.toUpperCase()));
       const querySnapshot = await getDocs(q);
       
@@ -178,12 +184,14 @@ class AuthService {
       };
 
       // Firestoreにカップルデータを保存
-      const coupleRef = doc(db, 'couples', coupleId);
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      const coupleRef = doc(database, 'couples', coupleId);
       await setDoc(coupleRef, coupleData);
 
       // 両方のユーザーにカップル情報を追加
-      const user1Ref = doc(db, 'users', currentUserId);
-      const user2Ref = doc(db, 'users', partner.uid);
+      const user1Ref = doc(database, 'users', currentUserId);
+      const user2Ref = doc(database, 'users', partner.uid);
 
       await updateDoc(user1Ref, {
         coupleId: coupleId,
@@ -218,12 +226,14 @@ class AuthService {
       }
 
       // カップルデータを削除
-      const coupleRef = doc(db, 'couples', userProfile.coupleId);
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      const coupleRef = doc(database, 'couples', userProfile.coupleId);
       await setDoc(coupleRef, { deleted: true, deletedAt: serverTimestamp() }, { merge: true });
 
       // 両方のユーザーからカップル情報を削除
-      const user1Ref = doc(db, 'users', userId);
-      const user2Ref = doc(db, 'users', partnerId);
+      const user1Ref = doc(database, 'users', userId);
+      const user2Ref = doc(database, 'users', partnerId);
 
       await updateDoc(user1Ref, {
         coupleId: null,
