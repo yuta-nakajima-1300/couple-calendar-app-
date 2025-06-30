@@ -137,7 +137,6 @@ export default function DateRangePicker({
       presentationStyle="pageSheet"
       accessible={true}
       accessibilityViewIsModal={true}
-      aria-hidden={!visible}
     >
       <View style={styles.container}>
         <View style={styles.header}>

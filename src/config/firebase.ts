@@ -14,31 +14,62 @@ import { getStorage } from 'firebase/storage';
   measurementId: "G-00RBKPTXQ7"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase with error handling
+let app: any;
+try {
+  app = initializeApp(firebaseConfig);
+} catch (error) {
+  console.error('Firebase app initialization failed:', error);
+  throw error;
+}
 
-// Initialize Firebase services with error handling
+// Initialize Firebase services with proper error handling
 export const auth = getAuth(app);
 
+// Lazy initialization for web environments
+let _db: any = null;
+let _storage: any = null;
+
+export const getDb = () => {
+  if (!_db) {
+    try {
+      _db = getFirestore(app);
+    } catch (error) {
+      console.warn('Firebase Firestore initialization failed:', error);
+      throw new Error('Firebase Firestore not available');
+    }
+  }
+  return _db;
+};
+
+export const getStorageInstance = () => {
+  if (!_storage) {
+    try {
+      _storage = getStorage(app);
+    } catch (error) {
+      console.warn('Firebase Storage initialization failed:', error);
+      throw new Error('Firebase Storage not available');
+    }
+  }
+  return _storage;
+};
+
+// Legacy exports for backward compatibility - with error handling
 let db: any;
 let storage: any;
 
 try {
-  db = getFirestore(app);
-  storage = getStorage(app);
+  db = getDb();
 } catch (error) {
-  console.warn('Firebase initialization warning:', error);
-  // Retry initialization after a short delay for web environments
-  if (typeof window !== 'undefined') {
-    setTimeout(() => {
-      try {
-        db = getFirestore(app);
-        storage = getStorage(app);
-      } catch (retryError) {
-        console.error('Firebase retry initialization failed:', retryError);
-      }
-    }, 1000);
-  }
+  console.warn('Firebase db export failed, will retry on first use');
+  db = null;
+}
+
+try {
+  storage = getStorageInstance();
+} catch (error) {
+  console.warn('Firebase storage export failed, will retry on first use');
+  storage = null;
 }
 
 export { db, storage };

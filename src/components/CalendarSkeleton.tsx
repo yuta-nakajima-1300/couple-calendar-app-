@@ -1,7 +1,7 @@
 // カレンダー読み込み中のスケルトンスクリーン
 
 import React from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 
 interface CalendarSkeletonProps {
   processingMessage?: string;
@@ -20,12 +20,12 @@ export default function CalendarSkeleton({
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(fadeAnim, {
           toValue: 0.3,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== 'web',
         }),
       ])
     );
