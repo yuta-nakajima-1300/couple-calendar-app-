@@ -36,12 +36,24 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
 
   // リアルタイムイベント監視
   useEffect(() => {
+    console.log('FirebaseEventContext useEffect - user:', !!user, 'userProfile:', !!userProfile);
+    
     if (!user || !userProfile) {
+      console.log('User or userProfile not available, skipping Firestore access');
       setEvents([]);
       setLoading(false);
       return;
     }
 
+    // 追加の認証チェック
+    if (!user.uid || user.uid.length === 0) {
+      console.log('User UID not available, skipping Firestore access');
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
+
+    console.log('Starting Firestore subscription for user:', user.uid);
     setLoading(true);
     setError(null);
 

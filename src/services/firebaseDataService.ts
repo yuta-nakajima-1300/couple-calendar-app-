@@ -13,22 +13,16 @@ import {
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import { db, getDb } from '../config/firebase';
+import { getSafeDb } from '../config/firebase';
 import { Event, EventCategory, DEFAULT_CATEGORIES } from '../types';
 
 // Firebase接続チェック関数
 const checkFirebaseConnection = () => {
-  try {
-    // まずdbインスタンスをチェック
-    if (db) {
-      return db;
-    }
-    // なければgetDbで新しく取得
-    return getDb();
-  } catch (error) {
-    console.error('Firebase connection check failed:', error);
-    throw new Error('Firebase Firestore not available. Please check your network connection.');
+  const database = getSafeDb();
+  if (!database) {
+    throw new Error('Firebase Firestore not available. Please ensure you are authenticated.');
   }
+  return database;
 };
 
 export interface FirebaseEvent {

@@ -62,25 +62,28 @@ export const getStorageInstance = () => {
   return _storage;
 };
 
-// Legacy exports for backward compatibility - with error handling
-let db: any;
-let storage: any;
+// Legacy exports - completely lazy initialization
+export const db = null; // Force lazy initialization
+export const storage = null; // Force lazy initialization
 
-try {
-  db = getDb();
-} catch (error) {
-  console.warn('Firebase db export failed, will retry on first use');
-  db = null;
-}
+// Safe getter functions that always work
+export const getSafeDb = () => {
+  try {
+    return getDb();
+  } catch (error) {
+    console.warn('Database not available:', error);
+    return null;
+  }
+};
 
-try {
-  storage = getStorageInstance();
-} catch (error) {
-  console.warn('Firebase storage export failed, will retry on first use');
-  storage = null;
-}
-
-export { db, storage };
+export const getSafeStorage = () => {
+  try {
+    return getStorageInstance();
+  } catch (error) {
+    console.warn('Storage not available:', error);
+    return null;
+  }
+};
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();

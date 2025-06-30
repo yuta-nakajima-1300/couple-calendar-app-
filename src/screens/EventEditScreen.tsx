@@ -303,6 +303,8 @@ export default function EventEditScreen() {
             spellCheck={false}
             keyboardType="default"
             returnKeyType="done"
+            nativeID="edit-event-title"
+            accessibilityLabel="予定のタイトル"
           />
         </View>
 
@@ -377,6 +379,8 @@ export default function EventEditScreen() {
             spellCheck={false}
             keyboardType="default"
             returnKeyType="done"
+            nativeID="edit-event-description"
+            accessibilityLabel="予定の詳細"
           />
           <Text style={styles.charCount}>{description.length}/200</Text>
         </View>

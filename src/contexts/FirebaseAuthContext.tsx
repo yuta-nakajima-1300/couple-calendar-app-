@@ -45,15 +45,20 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
 
   // 認証状態の監視
   useEffect(() => {
+    console.log('Setting up auth state listener...');
     const unsubscribe = authService.onAuthStateChanged(async (user) => {
+      console.log('Auth state changed - user:', !!user, user?.uid);
       setUser(user);
       
       if (user) {
+        console.log('User authenticated, fetching profile...');
         await fetchUserProfile(user.uid);
       } else {
+        console.log('User not authenticated, clearing profile');
         setUserProfile(null);
       }
       
+      console.log('Auth loading completed');
       setLoading(false);
     });
 

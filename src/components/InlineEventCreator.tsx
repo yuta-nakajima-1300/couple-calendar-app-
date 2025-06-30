@@ -168,6 +168,8 @@ export default function InlineEventCreator({
               spellCheck={false}
               keyboardType="default"
               returnKeyType="done"
+              nativeID="event-title-input"
+              accessibilityLabel="予定のタイトル"
             />
           </View>
 
@@ -226,6 +228,8 @@ export default function InlineEventCreator({
               spellCheck={false}
               keyboardType="default"
               returnKeyType="done"
+              nativeID="event-description-input"
+              accessibilityLabel="予定の詳細"
             />
             <Text style={styles.charCount}>{description.length}/200</Text>
           </View>
