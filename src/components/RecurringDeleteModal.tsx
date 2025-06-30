@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { Event } from '../types';
 import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
@@ -290,15 +291,103 @@ export default function RecurringDeleteModal({
 
   console.log('RecurringDeleteModal: モーダルをレンダリングします');
 
+  // Web環境での追加スタイル
+  const webModalStyle = Platform.OS === 'web' ? {
+    position: 'fixed' as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  } : {};
+
+  // Web環境でのModal表示
+  if (Platform.OS === 'web') {
+    return visible ? (
+      <div style={webModalStyle}>
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '90%',
+          maxWidth: '600px',
+          maxHeight: '90%',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '12px',
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+        }}>
+          <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.cancelButton}>キャンセル</Text>
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>繰り返し予定の削除</Text>
+              <View style={{ width: 60 }} />
+            </View>
+
+            <ScrollView style={styles.content}>
+              <View style={styles.eventInfo}>
+                <Text style={styles.eventTitle}>{event.title || '無題'}</Text>
+                <Text style={styles.eventDate}>選択日: {formatDate(selectedDate)}</Text>
+                {event.time && (
+                  <Text style={styles.eventTime}>
+                    {event.time}{event.endTime ? ` - ${event.endTime}` : ''}
+                  </Text>
+                )}
+              </View>
+
+              <Text style={styles.sectionTitle}>削除する範囲を選択してください</Text>
+
+              <View style={styles.optionsContainer}>
+                {(['single', 'future', 'all'] as DeleteOption[]).map(renderDeleteOption)}
+              </View>
+
+              <View style={styles.noteContainer}>
+                <Text style={styles.noteTitle}>⚠️ 注意事項</Text>
+                <Text style={styles.noteText}>
+                  • 「この日以降」および「すべて」の削除は取り消せません{'\n'}
+                  • 関連する通知やリマインダーも削除されます{'\n'}
+                  • 共有予定の場合、他の参加者にも影響があります
+                </Text>
+              </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+              <TouchableOpacity
+                style={[styles.deleteButton, (loading || calculating) && styles.disabledButton]}
+                onPress={handleDelete}
+                disabled={loading || calculating}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.deleteButtonText}>削除</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+          
+          <UndoToast
+            visible={showUndoToast}
+            message={undoMessage}
+            onUndo={handleUndo}
+            onDismiss={() => setShowUndoToast(false)}
+          />
+        </div>
+      </div>
+    ) : null;
+  }
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
-      accessible={true}
-      accessibilityViewIsModal={true}
-      supportedOrientations={['portrait', 'landscape']}
+      transparent={false}
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
