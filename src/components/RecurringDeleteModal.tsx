@@ -302,36 +302,50 @@ export default function RecurringDeleteModal({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   } : {};
 
-  // Web環境でのModal表示
-  if (Platform.OS === 'web' && visible) {
+  // Web環境では強制的にdivベースのモーダルを表示
+  if (Platform.OS === 'web') {
+    console.log('Web environment detected, rendering custom modal, visible:', visible);
+    if (!visible) {
+      console.log('Modal not visible, returning null');
+      return null;
+    }
+    
+    console.log('Rendering web modal overlay');
     return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-        onClick={(e) => {
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        onClick={(e: any) => {
+          console.log('Overlay clicked');
           if (e.target === e.currentTarget) {
             onClose();
           }
         }}
       >
-        <div style={{
-          width: '90%',
-          maxWidth: '600px',
-          maxHeight: '90%',
-          backgroundColor: '#f8f9fa',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
-        }}>
+        <div 
+          style={{
+            width: '90%',
+            maxWidth: '600px',
+            maxHeight: '90%',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '12px',
+            overflow: 'auto',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+          onClick={(e: any) => e.stopPropagation()}
+        >
           <SafeAreaView style={styles.container}>
             <View style={styles.header}>
               <TouchableOpacity onPress={onClose}>
