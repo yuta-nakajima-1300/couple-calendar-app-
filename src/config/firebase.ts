@@ -17,7 +17,13 @@ import { getStorage } from 'firebase/storage';
 // Initialize Firebase with error handling
 let app: any;
 try {
+  console.log('Initializing Firebase with config:', {
+    apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
+    authDomain: firebaseConfig.authDomain,
+    projectId: firebaseConfig.projectId
+  });
   app = initializeApp(firebaseConfig);
+  console.log('Firebase app initialized successfully');
 } catch (error) {
   console.error('Firebase app initialization failed:', error);
   throw error;
@@ -33,9 +39,11 @@ let _storage: any = null;
 export const getDb = () => {
   if (!_db) {
     try {
+      console.log('Initializing Firestore...');
       _db = getFirestore(app);
+      console.log('Firestore initialized successfully');
     } catch (error) {
-      console.warn('Firebase Firestore initialization failed:', error);
+      console.error('Firebase Firestore initialization failed:', error);
       throw new Error('Firebase Firestore not available');
     }
   }
