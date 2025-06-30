@@ -14,6 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp } from '@react-navigation/native';
 import type { CalendarStackParamList } from '../types/navigation';
 import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
+import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
 import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
@@ -40,6 +41,7 @@ export default function EventEditScreen() {
     return params.eventId;
   })();
   const { events, updateEvent, deleteEvent } = useFirebaseEvents();
+  const { user, userProfile } = useFirebaseAuth();
   
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -58,8 +60,20 @@ export default function EventEditScreen() {
   const [currentEvent, setCurrentEvent] = useState<any>(null);
 
   useEffect(() => {
+    console.log('EventEditScreen useEffect が実行されました');
+    console.log('eventId:', eventId);
+    console.log('events配列の長さ:', events.length);
+    console.log('ユーザー情報:', { 
+      userId: user?.uid, 
+      userEmail: user?.email,
+      userProfile: userProfile 
+    });
+    
     const event = events.find(e => e.id === eventId);
+    console.log('見つかったイベント:', event);
+    
     if (event) {
+      console.log('イベントデータをセットします');
       setCurrentEvent(event);
       setTitle(event.title);
       setDescription(event.description || '');
@@ -69,8 +83,10 @@ export default function EventEditScreen() {
       setEndTime(event.endTime || '');
       setIsAllDay(event.isAllDay || false);
       setCategory(event.category);
+    } else {
+      console.warn('指定されたIDのイベントが見つかりません:', eventId);
     }
-  }, [eventId, events]);
+  }, [eventId, events, user, userProfile]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -116,24 +132,37 @@ export default function EventEditScreen() {
   };
 
   const handleDelete = () => {
+    console.log('削除ボタンがクリックされました');
+    console.log('Current event:', currentEvent);
+    console.log('Event ID:', eventId);
+    console.log('Recurring ID:', currentEvent?.recurringId);
+    
     // 繰り返し予定かチェック
     if (currentEvent?.recurringId) {
+      console.log('繰り返し予定として処理します');
       // 繰り返し予定の場合は専用モーダルを表示
       setShowRecurringDeleteModal(true);
     } else {
+      console.log('通常の予定として処理します');
       // 通常の予定の場合は従来の削除処理
       handleSingleDelete();
     }
   };
 
   const handleSingleDelete = () => {
+    console.log('handleSingleDelete が呼び出されました');
+    console.log('Platform:', Platform.OS);
+    
     if (Platform.OS === 'web') {
+      console.log('Web環境での削除確認ダイアログを表示します');
       // Web環境での確認ダイアログ
       const confirmed = window.confirm('この予定を削除しますか？');
+      console.log('確認ダイアログの結果:', confirmed);
       if (confirmed) {
         performDelete();
       }
     } else {
+      console.log('モバイル環境での削除確認ダイアログを表示します');
       // モバイル環境
       Alert.alert(
         '確認',
@@ -143,7 +172,10 @@ export default function EventEditScreen() {
           { 
             text: '削除', 
             style: 'destructive', 
-            onPress: performDelete
+            onPress: () => {
+              console.log('削除が確認されました');
+              performDelete();
+            }
           }
         ]
       );
@@ -234,7 +266,14 @@ export default function EventEditScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>予定編集</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={handleDelete} disabled={deleting} style={styles.deleteButton}>
+          <TouchableOpacity 
+            onPress={() => {
+              console.log('削除ボタンがタップされました');
+              handleDelete();
+            }} 
+            disabled={deleting} 
+            style={styles.deleteButton}
+          >
             <Text style={styles.deleteButtonText}>
               {deleting ? '削除中...' : currentEvent?.recurringId ? '削除...' : '削除'}
             </Text>

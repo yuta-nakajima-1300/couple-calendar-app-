@@ -140,16 +140,26 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
 
   const deleteEvent = async (id: string): Promise<boolean> => {
     try {
+      console.log('FirebaseEventContext.deleteEvent が呼び出されました');
+      console.log('削除対象のイベントID:', id);
+      console.log('ユーザー:', user?.uid);
+      console.log('カップルID:', userProfile?.coupleId);
+      
       setError(null);
       
       if (!user) {
+        console.error('ユーザーがログインしていません');
         throw new Error('ユーザーがログインしていません');
       }
 
+      console.log('firebaseDataService.deleteEvent を呼び出します');
       await firebaseDataService.deleteEvent(id, user.uid, userProfile?.coupleId);
+      console.log('firebaseDataService.deleteEvent が完了しました');
+      
       // リアルタイム更新により自動的にeventsが更新される
       return true;
     } catch (err) {
+      console.error('削除エラー:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete event';
       setError(errorMessage);
       throw new Error(errorMessage);

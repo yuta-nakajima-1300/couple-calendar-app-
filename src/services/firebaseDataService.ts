@@ -133,24 +133,45 @@ class FirebaseDataService {
 
   async deleteEvent(eventId: string, userId: string, coupleId?: string): Promise<boolean> {
     try {
+      console.log('firebaseDataService.deleteEvent が開始されました');
+      console.log('パラメータ:', { eventId, userId, coupleId });
+      
       const eventRef = doc(db, 'events', eventId);
+      console.log('イベント参照を作成しました:', eventRef.path);
+      
       const eventDoc = await getDoc(eventRef);
+      console.log('イベントドキュメントを取得しました:', eventDoc.exists());
       
       if (!eventDoc.exists()) {
+        console.error('イベントが見つかりません:', eventId);
         throw new Error('イベントが見つかりません');
       }
 
       const eventData = eventDoc.data() as FirebaseEvent;
+      console.log('イベントデータ:', eventData);
       
       // 削除権限チェック
       const isCreator = eventData.createdBy === userId;
       const isCoupleEvent = eventData.coupleId && eventData.coupleId === coupleId;
       
+      console.log('権限チェック:', {
+        isCreator,
+        isCoupleEvent,
+        eventCreatedBy: eventData.createdBy,
+        currentUserId: userId,
+        eventCoupleId: eventData.coupleId,
+        userCoupleId: coupleId
+      });
+      
       if (!isCreator && !isCoupleEvent) {
+        console.error('削除権限がありません');
         throw new Error('削除権限がありません');
       }
 
+      console.log('ドキュメントを削除します');
       await deleteDoc(eventRef);
+      console.log('ドキュメントの削除が完了しました');
+      
       return true;
     } catch (error) {
       console.error('Failed to delete event:', error);
