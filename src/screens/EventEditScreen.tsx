@@ -18,7 +18,7 @@ import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
 import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
-import RecurringDeleteModal from '../components/RecurringDeleteModal';
+// import RecurringDeleteModal from '../components/RecurringDeleteModal';
 import { EventCategory, DEFAULT_CATEGORIES } from '../types';
 
 export default function EventEditScreen() {
@@ -56,7 +56,7 @@ export default function EventEditScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [showRecurringDeleteModal, setShowRecurringDeleteModal] = useState(false);
+  // const [showRecurringDeleteModal, setShowRecurringDeleteModal] = useState(false);
   const [currentEvent, setCurrentEvent] = useState<any>(null);
 
   useEffect(() => {
@@ -135,22 +135,11 @@ export default function EventEditScreen() {
     console.log('削除ボタンがクリックされました');
     console.log('Current event:', currentEvent);
     console.log('Event ID:', eventId);
-    console.log('Recurring ID:', currentEvent?.recurringId);
     
-    // 繰り返し予定かチェック
-    if (currentEvent?.recurringId) {
-      console.log('繰り返し予定として処理します');
-      console.log('RecurringDeleteModalを表示します');
-      console.log('現在のshowRecurringDeleteModal状態:', showRecurringDeleteModal);
-      
-      // 繰り返し予定の場合は専用モーダルを表示
-      setShowRecurringDeleteModal(true);
-      console.log('setShowRecurringDeleteModal(true)を実行しました');
-    } else {
-      console.log('通常の予定として処理します');
-      // 通常の予定の場合は従来の削除処理
-      handleSingleDelete();
-    }
+    // 繰り返し削除機能を一時的に無効化
+    // 全ての予定を通常削除として処理
+    console.log('通常の予定として処理します');
+    handleSingleDelete();
   };
 
   const handleSingleDelete = () => {
@@ -186,10 +175,10 @@ export default function EventEditScreen() {
     }
   };
 
-  const handleRecurringDeleteSuccess = () => {
-    // 繰り返し予定削除成功後にカレンダー画面に戻る
-    navigation.navigate('CalendarHome');
-  };
+  // const handleRecurringDeleteSuccess = () => {
+  //   // 繰り返し予定削除成功後にカレンダー画面に戻る
+  //   navigation.navigate('CalendarHome');
+  // };
 
   const performDelete = async () => {
     try {
@@ -412,6 +401,7 @@ export default function EventEditScreen() {
         allowEndTime={true}
       />
 
+      {/* RecurringDeleteModal temporarily disabled
       <RecurringDeleteModal
         visible={showRecurringDeleteModal}
         onClose={() => setShowRecurringDeleteModal(false)}
@@ -419,6 +409,7 @@ export default function EventEditScreen() {
         selectedDate={date}
         onDeleteSuccess={handleRecurringDeleteSuccess}
       />
+      */}
     </View>
   );
 }
