@@ -10,12 +10,49 @@ import {
   SafeAreaView 
 } from 'react-native';
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
+import { useCouple } from '../contexts/CoupleContext';
+import { SwipeDirection } from '../types/coupleTypes';
 
 export default function SettingsScreen() {
   const { signOut, user } = useFirebaseAuth();
+  const { settings, updateSwipeSettings } = useCouple();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [reminderDays, setReminderDays] = useState(1);
   const [darkMode, setDarkMode] = useState(false);
+
+  const handleSwipeDirectionChange = () => {
+    Alert.alert(
+      'スワイプ方向',
+      'カレンダーのスワイプ方向を選択してください',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '左右',
+          onPress: () => updateSwipeSettings({ direction: 'horizontal' }),
+        },
+        {
+          text: '上下',
+          onPress: () => updateSwipeSettings({ direction: 'vertical' }),
+        },
+      ]
+    );
+  };
+
+  const handleSwipeSensitivityChange = () => {
+    const currentSensitivity = settings.swipeSettings.sensitivity;
+    Alert.alert(
+      'スワイプ感度',
+      `現在の感度: ${currentSensitivity}/5\n新しい感度を選択してください`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        { text: '1 (低い)', onPress: () => updateSwipeSettings({ sensitivity: 1 }) },
+        { text: '2', onPress: () => updateSwipeSettings({ sensitivity: 2 }) },
+        { text: '3 (標準)', onPress: () => updateSwipeSettings({ sensitivity: 3 }) },
+        { text: '4', onPress: () => updateSwipeSettings({ sensitivity: 4 }) },
+        { text: '5 (高い)', onPress: () => updateSwipeSettings({ sensitivity: 5 }) },
+      ]
+    );
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -166,6 +203,20 @@ export default function SettingsScreen() {
                 thumbColor={darkMode ? '#fff' : '#f4f3f4'}
               />
             }
+          />
+
+          <SettingItem
+            title="スワイプ方向"
+            subtitle={`${settings.swipeSettings.direction === 'horizontal' ? '左右' : '上下'}でカレンダーを操作`}
+            showArrow
+            onPress={handleSwipeDirectionChange}
+          />
+
+          <SettingItem
+            title="スワイプ感度"
+            subtitle={`感度: ${settings.swipeSettings.sensitivity}/5`}
+            showArrow
+            onPress={handleSwipeSensitivityChange}
           />
 
           <SettingItem

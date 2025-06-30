@@ -21,6 +21,7 @@ import { loadSampleData, clearAllData } from '../utils/sampleData';
 import InlineEventCreator from '../components/InlineEventCreator';
 import CalendarSkeleton from '../components/CalendarSkeleton';
 import EventFilterBar from '../components/EventFilterBar';
+import CalendarSwipeGesture from '../components/CalendarSwipeGesture';
 import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
 import { generateOptimizedMarkedDates, CalendarProcessingResult } from '../utils/optimizedCalendarUtils';
 import { useCouple } from '../contexts/CoupleContext';
@@ -43,7 +44,8 @@ export default function CalendarScreen() {
   });
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('');
-  const { filterState, isEventVisible, getEventColor, getEventOwnerInitial } = useCouple();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { filterState, isEventVisible, getEventColor, getEventOwnerInitial, settings } = useCouple();
 
   const displayedEvents = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -85,6 +87,35 @@ export default function CalendarScreen() {
     // 即座に実行（デバウンスなし）
     processCalendar();
   }, [events, selectedDate, loading]);
+
+  // スワイプナビゲーション
+  const handleSwipeLeft = () => {
+    // 左スワイプ = 次月
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentMonth(nextMonth);
+  };
+
+  const handleSwipeRight = () => {
+    // 右スワイプ = 前月
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setCurrentMonth(prevMonth);
+  };
+
+  const handleSwipeUp = () => {
+    // 上スワイプ = 次月（垂直方向設定時）
+    const nextMonth = new Date(currentMonth);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    setCurrentMonth(nextMonth);
+  };
+
+  const handleSwipeDown = () => {
+    // 下スワイプ = 前月（垂直方向設定時）
+    const prevMonth = new Date(currentMonth);
+    prevMonth.setMonth(prevMonth.getMonth() - 1);
+    setCurrentMonth(prevMonth);
+  };
 
   const renderEvent = ({ item }: { item: Event }) => {
     const ownerType = (item.ownerType || 'shared') as EventOwnerType;
@@ -161,7 +192,13 @@ export default function CalendarScreen() {
       {/* フィルターバー */}
       <EventFilterBar compact={isMobile} />
 
-      <Calendar
+      <CalendarSwipeGesture
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        onSwipeUp={handleSwipeUp}
+        onSwipeDown={handleSwipeDown}
+      >
+        <Calendar
         style={styles.calendar}
         theme={{
           backgroundColor: '#ffffff',
@@ -217,11 +254,15 @@ export default function CalendarScreen() {
         firstDay={0}
         hideDayNames={false}
         showWeekNumbers={false}
-        onPressArrowLeft={(subtractMonth) => subtractMonth()}
-        onPressArrowRight={(addMonth) => addMonth()}
+        onPressArrowLeft={() => handleSwipeRight()}
+        onPressArrowRight={() => handleSwipeLeft()}
         disableArrowLeft={false}
         disableArrowRight={false}
         disableAllTouchEventsForDisabledDays={true}
+        current={currentMonth.toISOString().split('T')[0]}
+        onMonthChange={(month) => {
+          setCurrentMonth(new Date(month.dateString));
+        }}
         renderHeader={(date) => {
           return (
             <Text style={styles.headerText}>
@@ -229,7 +270,8 @@ export default function CalendarScreen() {
             </Text>
           );
         }}
-      />
+        />
+      </CalendarSwipeGesture>
 
       <View style={styles.eventsSection}>
         <View style={styles.eventsSectionHeader}>

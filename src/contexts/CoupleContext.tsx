@@ -7,6 +7,7 @@ import {
   UserProfile,
   EventOwnerType,
   FilterState,
+  SwipeSettings,
   DEFAULT_COUPLE_SETTINGS,
   DEFAULT_FILTER_STATE,
 } from '../types/coupleTypes';
@@ -22,6 +23,7 @@ interface CoupleContextType {
   updateSharedColor: (color: string) => Promise<void>;
   updateDefaultEventType: (type: EventOwnerType) => Promise<void>;
   updateDisplaySettings: (showInitials: boolean, showNames: boolean) => Promise<void>;
+  updateSwipeSettings: (swipeSettings: Partial<SwipeSettings>) => Promise<void>;
   
   // フィルター操作
   toggleFilter: (type: EventOwnerType) => void;
@@ -143,6 +145,14 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
     await saveSettings(newSettings);
   };
 
+  const updateSwipeSettings = async (swipeSettings: Partial<SwipeSettings>) => {
+    const newSettings = {
+      ...settings,
+      swipeSettings: { ...settings.swipeSettings, ...swipeSettings },
+    };
+    await saveSettings(newSettings);
+  };
+
   // フィルター操作メソッド（メモ化）
   const toggleFilter = useCallback((type: EventOwnerType) => {
     const newFilterState = {
@@ -224,6 +234,7 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
     updateSharedColor,
     updateDefaultEventType,
     updateDisplaySettings,
+    updateSwipeSettings,
     
     toggleFilter,
     setAllFilters,

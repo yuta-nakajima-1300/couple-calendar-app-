@@ -10,6 +10,13 @@ export interface UserProfile {
   displayName: string;
 }
 
+export type SwipeDirection = 'horizontal' | 'vertical';
+
+export interface SwipeSettings {
+  direction: SwipeDirection;
+  sensitivity: number; // 1-5 の感度設定
+}
+
 export interface CoupleSettings {
   user: UserProfile;
   partner: UserProfile;
@@ -17,6 +24,7 @@ export interface CoupleSettings {
   defaultEventType: EventOwnerType;
   showOwnerInitials: boolean;
   showOwnerNames: boolean;
+  swipeSettings: SwipeSettings;
 }
 
 export interface EventOwnership {
@@ -111,4 +119,8 @@ export const DEFAULT_COUPLE_SETTINGS: CoupleSettings = {
   defaultEventType: 'shared',
   showOwnerInitials: true,
   showOwnerNames: false,
+  swipeSettings: {
+    direction: 'horizontal',
+    sensitivity: 3,
+  },
 };
