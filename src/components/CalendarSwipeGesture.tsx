@@ -1,7 +1,7 @@
 // カレンダースワイプ操作コンポーネント
 
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -33,6 +33,55 @@ export default function CalendarSwipeGesture({
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+
+  // Web環境では簡易的なタッチハンドリングに切り替え
+  if (Platform.OS === 'web') {
+    const handleTouchStart = (e: any) => {
+      e.currentTarget.touchStartX = e.touches[0].clientX;
+      e.currentTarget.touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: any) => {
+      if (!e.currentTarget.touchStartX || !e.currentTarget.touchStartY) return;
+      
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      const diffX = e.currentTarget.touchStartX - touchEndX;
+      const diffY = e.currentTarget.touchStartY - touchEndY;
+      
+      const threshold = 50; // 固定閾値
+      
+      if (direction === 'horizontal') {
+        if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX > 0) {
+            onSwipeLeft();
+          } else {
+            onSwipeRight();
+          }
+        }
+      } else {
+        if (Math.abs(diffY) > threshold && Math.abs(diffY) > Math.abs(diffX)) {
+          if (diffY > 0) {
+            onSwipeUp && onSwipeUp();
+          } else {
+            onSwipeDown && onSwipeDown();
+          }
+        }
+      }
+    };
+
+    return (
+      <View style={styles.container}>
+        <View 
+          style={styles.gestureArea}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {children}
+        </View>
+      </View>
+    );
+  }
 
   // 感度設定から閾値を計算 (1-5の設定を50-150ピクセルに変換)
   const threshold = useMemo(() => {
@@ -94,14 +143,17 @@ export default function CalendarSwipeGesture({
       }
 
       // アニメーションで元の位置に戻す
-      translateX.value = withSpring(0, {
+      const springConfig = {
         damping: 15,
         stiffness: 150,
-      });
-      translateY.value = withSpring(0, {
-        damping: 15,
-        stiffness: 150,
-      });
+        mass: 1,
+        overshootClamping: false,
+        restDisplacementThreshold: 0.01,
+        restSpeedThreshold: 2,
+      };
+      
+      translateX.value = withSpring(0, springConfig);
+      translateY.value = withSpring(0, springConfig);
 
       // スワイプアクションを実行
       if (shouldTriggerSwipe && swipeAction) {
