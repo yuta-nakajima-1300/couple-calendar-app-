@@ -64,7 +64,7 @@ export function filterEventsByDateRange(events: Event[], dateRange: DateRange): 
 }
 
 /**
- * 土日祝の色分けマーキングを生成（範囲限定版・軽量化）
+ * 土日祝の色分けマーキングを生成（全日付対応・軽量化）
  */
 export function generateWeekendHolidayMarking(dateRange: DateRange): Record<string, OptimizedMarkedDate> {
   const dates: Record<string, OptimizedMarkedDate> = {};
@@ -77,15 +77,13 @@ export function generateWeekendHolidayMarking(dateRange: DateRange): Record<stri
     const dateString = currentDate.toISOString().split('T')[0];
     const dateColor = getDateColor(dateString);
     
-    // パフォーマンス最適化：土日祝のみマーキング
-    if (dateColor !== DATE_COLORS.weekday) {
-      dates[dateString] = {
-        customTextStyle: {
-          color: dateColor,
-          fontWeight: 'bold'
-        }
-      };
-    }
+    // すべての日付に色分けを適用
+    dates[dateString] = {
+      customTextStyle: {
+        color: dateColor,
+        fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+      }
+    };
 
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -200,7 +198,7 @@ export function generateOptimizedMarkedDates(
     const dateRange = calculateVisibleDateRange(referenceDate);
 
     // 2. キャッシュから結果を取得を試行（簡素化）
-    const cacheKey = `${events.length}_${dateRange.start}_${dateRange.end}_${selectedDate || 'none'}`;
+    const cacheKey = `${events.length}_${dateRange.start}_${dateRange.end}_${selectedDate || 'none'}_v2`; // v2でキャッシュ無効化
     if (typeof window !== 'undefined' && (window as any).__calendarCache) {
       const cached = (window as any).__calendarCache[cacheKey];
       if (cached && (Date.now() - cached.timestamp) < 30000) { // 30秒キャッシュ
@@ -219,6 +217,17 @@ export function generateOptimizedMarkedDates(
 
     // 6. 選択日マーキングを適用
     const finalMarkings = applySelectedDateMarking(eventMarkings, selectedDate);
+
+    // デバッグ情報（開発環境のみ）
+    if (__DEV__) {
+      const weekendDays = Object.keys(baseMarkings).filter(date => {
+        const color = baseMarkings[date].customTextStyle?.color;
+        return color === '#0066cc' || color === '#dc143c'; // 土曜・日曜・祝日
+      });
+      if (weekendDays.length > 0) {
+        console.log('📅 Weekend/Holiday markings:', weekendDays.slice(0, 5));
+      }
+    }
 
     const calculationTime = performance.now() - calculationStart;
 
