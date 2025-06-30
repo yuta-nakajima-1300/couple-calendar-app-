@@ -158,6 +158,7 @@ export default function EventEditScreen() {
   const performDelete = async () => {
     try {
       console.log('Performing delete for event:', eventId); // デバッグ用
+      console.log('Current event:', currentEvent); // デバッグ用
       setDeleting(true);
       const success = await deleteEvent(eventId);
       console.log('Delete result:', success); // デバッグ用
@@ -165,18 +166,24 @@ export default function EventEditScreen() {
         // カレンダー画面に戻る
         navigation.navigate('CalendarHome');
       } else {
+        const errorMessage = '予定の削除に失敗しました（戻り値がfalse）';
+        console.error(errorMessage);
         if (Platform.OS === 'web') {
-          window.alert('予定の削除に失敗しました');
+          window.alert(errorMessage);
         } else {
-          Alert.alert('エラー', '予定の削除に失敗しました');
+          Alert.alert('エラー', errorMessage);
         }
       }
     } catch (error) {
-      console.error('Delete error:', error);
+      console.error('Delete error details:', error);
+      let errorMessage = '予定の削除に失敗しました';
+      if (error instanceof Error) {
+        errorMessage = `削除エラー: ${error.message}`;
+      }
       if (Platform.OS === 'web') {
-        window.alert('予定の削除に失敗しました');
+        window.alert(errorMessage);
       } else {
-        Alert.alert('エラー', '予定の削除に失敗しました');
+        Alert.alert('エラー', errorMessage);
       }
     } finally {
       setDeleting(false);

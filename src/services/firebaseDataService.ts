@@ -131,7 +131,7 @@ class FirebaseDataService {
     }
   }
 
-  async deleteEvent(eventId: string, userId: string): Promise<boolean> {
+  async deleteEvent(eventId: string, userId: string, coupleId?: string): Promise<boolean> {
     try {
       const eventRef = doc(db, 'events', eventId);
       const eventDoc = await getDoc(eventRef);
@@ -143,7 +143,10 @@ class FirebaseDataService {
       const eventData = eventDoc.data() as FirebaseEvent;
       
       // 削除権限チェック
-      if (eventData.createdBy !== userId) {
+      const isCreator = eventData.createdBy === userId;
+      const isCoupleEvent = eventData.coupleId && eventData.coupleId === coupleId;
+      
+      if (!isCreator && !isCoupleEvent) {
         throw new Error('削除権限がありません');
       }
 

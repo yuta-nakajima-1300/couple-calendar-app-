@@ -146,7 +146,7 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
         throw new Error('ユーザーがログインしていません');
       }
 
-      await firebaseDataService.deleteEvent(id, user.uid);
+      await firebaseDataService.deleteEvent(id, user.uid, userProfile?.coupleId);
       // リアルタイム更新により自動的にeventsが更新される
       return true;
     } catch (err) {

@@ -175,6 +175,7 @@ export default function RecurringDeleteModal({
     
     if (targetEvent) {
       setDeletedEvents([targetEvent]); // 復元用に保存
+      console.log('Deleting single recurring event:', targetEvent.id); // デバッグ用
       await deleteEvent(targetEvent.id);
     }
   };
@@ -188,9 +189,13 @@ export default function RecurringDeleteModal({
     );
 
     setDeletedEvents(futureEvents); // 復元用に保存
+    console.log('Deleting future recurring events:', futureEvents.length, 'events'); // デバッグ用
     
     // バッチ削除
-    const deletePromises = futureEvents.map(e => deleteEvent(e.id));
+    const deletePromises = futureEvents.map(e => {
+      console.log('Deleting future event:', e.id); // デバッグ用
+      return deleteEvent(e.id);
+    });
     await Promise.all(deletePromises);
   };
 
@@ -202,9 +207,13 @@ export default function RecurringDeleteModal({
     );
 
     setDeletedEvents(recurringEvents); // 復元用に保存
+    console.log('Deleting all recurring events:', recurringEvents.length, 'events'); // デバッグ用
     
     // バッチ削除
-    const deletePromises = recurringEvents.map(e => deleteEvent(e.id));
+    const deletePromises = recurringEvents.map(e => {
+      console.log('Deleting all event:', e.id); // デバッグ用
+      return deleteEvent(e.id);
+    });
     await Promise.all(deletePromises);
   };
 
