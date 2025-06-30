@@ -54,6 +54,16 @@ export default function RecurringDeleteModal({
   const [deletedEvents, setDeletedEvents] = useState<Event[]>([]);
   const [undoMessage, setUndoMessage] = useState('');
 
+  // visible状態の変化を監視
+  useEffect(() => {
+    console.log('RecurringDeleteModal visible状態が変化:', visible);
+    if (visible) {
+      console.log('モーダルが表示されようとしています');
+      console.log('Event:', event);
+      console.log('Selected date:', selectedDate);
+    }
+  }, [visible, event, selectedDate]);
+
   useEffect(() => {
     if (!visible || !event?.recurringId) return;
 
@@ -288,6 +298,7 @@ export default function RecurringDeleteModal({
       onRequestClose={onClose}
       accessible={true}
       accessibilityViewIsModal={true}
+      supportedOrientations={['portrait', 'landscape']}
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
