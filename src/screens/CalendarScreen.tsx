@@ -21,7 +21,7 @@ import { loadSampleData, clearAllData } from '../utils/sampleData';
 import InlineEventCreator from '../components/InlineEventCreator';
 import CalendarSkeleton from '../components/CalendarSkeleton';
 import EventFilterBar from '../components/EventFilterBar';
-import CalendarSwipeGesture from '../components/CalendarSwipeGesture';
+// import CalendarSwipeGesture from '../components/CalendarSwipeGesture';
 import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
 import { generateOptimizedMarkedDates, CalendarProcessingResult } from '../utils/optimizedCalendarUtils';
 import { useCouple } from '../contexts/CoupleContext';
@@ -192,12 +192,12 @@ export default function CalendarScreen() {
       {/* フィルターバー */}
       <EventFilterBar compact={isMobile} />
 
-      <CalendarSwipeGesture
+      {/* <CalendarSwipeGesture
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         onSwipeUp={handleSwipeUp}
         onSwipeDown={handleSwipeDown}
-      >
+      > */}
         <Calendar
         style={styles.calendar}
         theme={{
@@ -271,7 +271,7 @@ export default function CalendarScreen() {
           );
         }}
         />
-      </CalendarSwipeGesture>
+      {/* </CalendarSwipeGesture> */}
 
       <View style={styles.eventsSection}>
         <View style={styles.eventsSectionHeader}>
