@@ -140,8 +140,16 @@ export default function EventEditScreen() {
     // 繰り返し予定かチェック
     if (currentEvent?.recurringId) {
       console.log('繰り返し予定として処理します');
+      console.log('RecurringDeleteModalを表示します');
+      console.log('現在のshowRecurringDeleteModal状態:', showRecurringDeleteModal);
+      
+      // 一時的にテスト用：通常の削除処理を実行
+      console.log('テスト用：通常の削除処理を実行します');
+      handleSingleDelete();
+      
       // 繰り返し予定の場合は専用モーダルを表示
-      setShowRecurringDeleteModal(true);
+      // setShowRecurringDeleteModal(true);
+      // console.log('setShowRecurringDeleteModal(true)を実行しました');
     } else {
       console.log('通常の予定として処理します');
       // 通常の予定の場合は従来の削除処理

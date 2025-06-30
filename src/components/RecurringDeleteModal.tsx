@@ -39,6 +39,8 @@ export default function RecurringDeleteModal({
   selectedDate,
   onDeleteSuccess,
 }: RecurringDeleteModalProps) {
+  console.log('RecurringDeleteModal がレンダリングされました');
+  console.log('Props:', { visible, event: event?.title, selectedDate });
   const { events, deleteEvent, updateEvent } = useFirebaseEvents();
   const [selectedOption, setSelectedOption] = useState<DeleteOption>('single');
   const [deleteInfo, setDeleteInfo] = useState<Record<DeleteOption, DeleteOptionInfo>>({
@@ -269,7 +271,14 @@ export default function RecurringDeleteModal({
     );
   };
 
-  if (!event || !event.recurringId) return null;
+  if (!event || !event.recurringId) {
+    console.log('RecurringDeleteModal: 条件を満たさないためnullを返します');
+    console.log('Event:', event);
+    console.log('RecurringId:', event?.recurringId);
+    return null;
+  }
+
+  console.log('RecurringDeleteModal: モーダルをレンダリングします');
 
   return (
     <Modal
@@ -277,6 +286,8 @@ export default function RecurringDeleteModal({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
+      accessible={true}
+      accessibilityViewIsModal={true}
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
