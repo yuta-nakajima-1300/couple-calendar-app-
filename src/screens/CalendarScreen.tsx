@@ -183,7 +183,28 @@ export default function CalendarScreen() {
           textDayHeaderFontWeight: '300',
           textDayFontSize: isMobile ? 14 : 16,
           textMonthFontSize: isMobile ? 14 : 16,
-          textDayHeaderFontSize: isMobile ? 11 : 13
+          textDayHeaderFontSize: isMobile ? 11 : 13,
+          // 土日祝の色分け
+          'stylesheet.calendar.header': {
+            dayTextAtIndex0: {
+              color: '#dc143c', // 日曜日：赤
+              fontWeight: 'bold',
+            },
+            dayTextAtIndex6: {
+              color: '#0066cc', // 土曜日：青
+              fontWeight: 'bold',
+            },
+          },
+          'stylesheet.calendar.main': {
+            dayTextAtIndex0: {
+              color: '#dc143c', // 日曜日：赤
+              fontWeight: 'bold',
+            },
+            dayTextAtIndex6: {
+              color: '#0066cc', // 土曜日：青
+              fontWeight: 'bold',
+            },
+          },
         }}
         onDayPress={(day) => {
           setSelectedDate(day.dateString);

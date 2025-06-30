@@ -17,6 +17,7 @@ import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
 import DateRangePicker from '../components/DateRangePicker';
 import CategoryPicker from '../components/CategoryPicker';
 import TimePicker from '../components/TimePicker';
+import RecurringDeleteModal from '../components/RecurringDeleteModal';
 import { EventCategory, DEFAULT_CATEGORIES } from '../types';
 
 export default function EventEditScreen() {
@@ -53,10 +54,13 @@ export default function EventEditScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showRecurringDeleteModal, setShowRecurringDeleteModal] = useState(false);
+  const [currentEvent, setCurrentEvent] = useState<any>(null);
 
   useEffect(() => {
     const event = events.find(e => e.id === eventId);
     if (event) {
+      setCurrentEvent(event);
       setTitle(event.title);
       setDescription(event.description || '');
       setDate(event.date);
@@ -112,7 +116,17 @@ export default function EventEditScreen() {
   };
 
   const handleDelete = () => {
-    console.log('Delete button clicked'); // デバッグ用
+    // 繰り返し予定かチェック
+    if (currentEvent?.recurringId) {
+      // 繰り返し予定の場合は専用モーダルを表示
+      setShowRecurringDeleteModal(true);
+    } else {
+      // 通常の予定の場合は従来の削除処理
+      handleSingleDelete();
+    }
+  };
+
+  const handleSingleDelete = () => {
     if (Platform.OS === 'web') {
       // Web環境での確認ダイアログ
       const confirmed = window.confirm('この予定を削除しますか？');
@@ -134,6 +148,11 @@ export default function EventEditScreen() {
         ]
       );
     }
+  };
+
+  const handleRecurringDeleteSuccess = () => {
+    // 繰り返し予定削除成功後にカレンダー画面に戻る
+    navigation.navigate('CalendarHome');
   };
 
   const performDelete = async () => {
@@ -210,7 +229,7 @@ export default function EventEditScreen() {
         <View style={styles.headerButtons}>
           <TouchableOpacity onPress={handleDelete} disabled={deleting} style={styles.deleteButton}>
             <Text style={styles.deleteButtonText}>
-              {deleting ? '削除中...' : '削除'}
+              {deleting ? '削除中...' : currentEvent?.recurringId ? '削除...' : '削除'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveButtonContainer}>
@@ -337,6 +356,14 @@ export default function EventEditScreen() {
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
         allowEndTime={true}
+      />
+
+      <RecurringDeleteModal
+        visible={showRecurringDeleteModal}
+        onClose={() => setShowRecurringDeleteModal(false)}
+        event={currentEvent}
+        selectedDate={date}
+        onDeleteSuccess={handleRecurringDeleteSuccess}
       />
     </View>
   );
