@@ -34,25 +34,48 @@ export default function CalendarSwipeGesture({
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  // Web環境では簡易的なタッチハンドリングに切り替え
+  // Web環境では簡易的なタッチ/マウスハンドリングに切り替え
   if (Platform.OS === 'web') {
+    console.log('Web swipe gesture enabled, direction:', direction, 'sensitivity:', sensitivity);
+    
+    const handleStart = (e: any, clientX: number, clientY: number) => {
+      console.log('Swipe start detected:', clientX, clientY);
+      e.currentTarget.startX = clientX;
+      e.currentTarget.startY = clientY;
+    };
+
+    const handleEnd = (e: any, clientX: number, clientY: number) => {
+      if (!e.currentTarget.startX || !e.currentTarget.startY) return;
+      
+      const diffX = e.currentTarget.startX - clientX;
+      const diffY = e.currentTarget.startY - clientY;
+      
+      console.log('Swipe detected:', { diffX, diffY, direction });
+      processSwipe(diffX, diffY);
+    };
+
     const handleTouchStart = (e: any) => {
-      e.currentTarget.touchStartX = e.touches[0].clientX;
-      e.currentTarget.touchStartY = e.touches[0].clientY;
+      handleStart(e, e.touches[0].clientX, e.touches[0].clientY);
     };
 
     const handleTouchEnd = (e: any) => {
-      if (!e.currentTarget.touchStartX || !e.currentTarget.touchStartY) return;
-      
-      const touchEndX = e.changedTouches[0].clientX;
-      const touchEndY = e.changedTouches[0].clientY;
-      const diffX = e.currentTarget.touchStartX - touchEndX;
-      const diffY = e.currentTarget.touchStartY - touchEndY;
-      
+      handleEnd(e, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    };
+
+    const handleMouseDown = (e: any) => {
+      handleStart(e, e.clientX, e.clientY);
+    };
+
+    const handleMouseUp = (e: any) => {
+      handleEnd(e, e.clientX, e.clientY);
+    };
+
+    const processSwipe = (diffX: number, diffY: number) => {
       const threshold = 50; // 固定閾値
       
       if (direction === 'horizontal') {
         if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) {
+          console.log('Horizontal swipe triggered:', diffX > 0 ? 'left' : 'right');
           if (diffX > 0) {
             onSwipeLeft();
           } else {
@@ -61,6 +84,7 @@ export default function CalendarSwipeGesture({
         }
       } else {
         if (Math.abs(diffY) > threshold && Math.abs(diffY) > Math.abs(diffX)) {
+          console.log('Vertical swipe triggered:', diffY > 0 ? 'up' : 'down');
           if (diffY > 0) {
             onSwipeUp && onSwipeUp();
           } else {
@@ -76,6 +100,8 @@ export default function CalendarSwipeGesture({
           style={styles.gestureArea}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
         >
           {children}
         </View>
