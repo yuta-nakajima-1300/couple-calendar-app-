@@ -207,6 +207,7 @@ export default function CalendarScreen() {
         onSwipeDown={handleSwipeDown}
       >
         <Calendar
+        key={currentMonth} // Force re-render when month changes
         style={styles.calendar}
         theme={{
           backgroundColor: '#ffffff',
@@ -237,7 +238,7 @@ export default function CalendarScreen() {
         markingType="multi-dot"
         monthFormat={'yyyy年 MM月'}
         hideExtraDays={true}
-        disableMonthChange={false}
+        disableMonthChange={true}
         firstDay={0}
         hideDayNames={false}
         showWeekNumbers={false}
@@ -247,10 +248,7 @@ export default function CalendarScreen() {
         disableArrowRight={false}
         disableAllTouchEventsForDisabledDays={true}
         current={currentMonth}
-        onMonthChange={(month) => {
-          console.log('Month changed via calendar:', month.dateString);
-          setCurrentMonth(month.dateString);
-        }}
+        // onMonthChange disabled to prevent conflicts with swipe navigation
         renderHeader={(date) => {
           return (
             <Text style={styles.headerText}>
