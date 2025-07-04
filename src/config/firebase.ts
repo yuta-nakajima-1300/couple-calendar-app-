@@ -3,16 +3,32 @@ import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth'
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
-// Firebase configuration
- const firebaseConfig = {
-  apiKey: "AIzaSyA6rjou9WjkG-Ivqfpqcis5jZXbGLfyXDY",
-  authDomain: "couple-calendar-app-ac225.firebaseapp.com",
-  projectId: "couple-calendar-app-ac225",
-  storageBucket: "couple-calendar-app-ac225.firebasestorage.app",
-  messagingSenderId: "1093220447522",
-  appId: "1:1093220447522:web:9d96a3e6087f9ad4f6217b",
-  measurementId: "G-00RBKPTXQ7"
+// Firebase configuration from environment variables
+const firebaseConfig = {
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Validate required environment variables
+const requiredEnvVars = [
+  'EXPO_PUBLIC_FIREBASE_API_KEY',
+  'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+  'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'EXPO_PUBLIC_FIREBASE_APP_ID'
+];
+
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
+}
 
 // Initialize Firebase with error handling
 let app: any;
@@ -20,7 +36,8 @@ try {
   console.log('Initializing Firebase with config:', {
     apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
     authDomain: firebaseConfig.authDomain,
-    projectId: firebaseConfig.projectId
+    projectId: firebaseConfig.projectId,
+    environment: process.env.EXPO_PUBLIC_ENVIRONMENT || 'production'
   });
   app = initializeApp(firebaseConfig);
   console.log('Firebase app initialized successfully');

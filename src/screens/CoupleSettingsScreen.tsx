@@ -12,9 +12,11 @@ import {
   Share,
 } from 'react-native';
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
+import { useNavigation } from '@react-navigation/native';
 
 export default function CoupleSettingsScreen() {
   const { userProfile, linkCouple, unlinkCouple, signOut, loading } = useFirebaseAuth();
+  const navigation = useNavigation();
   const [inviteCode, setInviteCode] = useState('');
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
@@ -201,6 +203,18 @@ export default function CoupleSettingsScreen() {
               </View>
             </View>
           )}
+        </View>
+
+        {/* セキュリティ */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>セキュリティ</Text>
+          <TouchableOpacity 
+            style={styles.securityButton} 
+            onPress={() => navigation.navigate('SecurityDiagnostics' as never)}
+          >
+            <Text style={styles.securityButtonText}>セキュリティ診断</Text>
+            <Text style={styles.securityButtonSubtext}>アプリのセキュリティ状態を確認</Text>
+          </TouchableOpacity>
         </View>
 
         {/* アカウント */}
@@ -414,5 +428,22 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  securityButton: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  securityButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  securityButtonSubtext: {
+    fontSize: 14,
+    color: '#666',
   },
 });

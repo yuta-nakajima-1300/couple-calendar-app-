@@ -254,6 +254,20 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* セキュリティ */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>セキュリティ</Text>
+          
+          <SettingItem
+            title="セキュリティ診断"
+            subtitle="アプリのセキュリティ状態を確認"
+            showArrow
+            onPress={() => {
+              navigation.navigate('SecurityDiagnostics' as never);
+            }}
+          />
+        </View>
+
         {/* サポート */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>サポート</Text>

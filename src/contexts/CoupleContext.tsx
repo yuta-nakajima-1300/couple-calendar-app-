@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setSecureItem, getSecureItem } from '../utils/secureStorage';
 import {
   CoupleSettings,
   UserProfile,
@@ -43,8 +44,8 @@ interface CoupleContextType {
 const CoupleContext = createContext<CoupleContextType | undefined>(undefined);
 
 const STORAGE_KEYS = {
-  COUPLE_SETTINGS: '@couple_calendar_settings',
-  FILTER_STATE: '@couple_calendar_filters',
+  COUPLE_SETTINGS: 'couple_calendar_settings',
+  FILTER_STATE: 'couple_calendar_filters',
 };
 
 interface CoupleProviderProps {
@@ -66,14 +67,14 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
       setIsLoading(true);
       
       // 設定を読み込み
-      const savedSettings = await AsyncStorage.getItem(STORAGE_KEYS.COUPLE_SETTINGS);
+      const savedSettings = await getSecureItem(STORAGE_KEYS.COUPLE_SETTINGS);
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
         setSettings({ ...DEFAULT_COUPLE_SETTINGS, ...parsedSettings });
       }
 
       // フィルター状態を読み込み
-      const savedFilters = await AsyncStorage.getItem(STORAGE_KEYS.FILTER_STATE);
+      const savedFilters = await getSecureItem(STORAGE_KEYS.FILTER_STATE);
       if (savedFilters) {
         const parsedFilters = JSON.parse(savedFilters);
         setFilterState({ ...DEFAULT_FILTER_STATE, ...parsedFilters });
@@ -87,7 +88,7 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
 
   const saveSettings = async (newSettings: CoupleSettings) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.COUPLE_SETTINGS, JSON.stringify(newSettings));
+      await setSecureItem(STORAGE_KEYS.COUPLE_SETTINGS, JSON.stringify(newSettings));
       setSettings(newSettings);
     } catch (error) {
       console.error('Failed to save couple settings:', error);
@@ -96,7 +97,7 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
 
   const saveFilterState = async (newFilterState: FilterState) => {
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.FILTER_STATE, JSON.stringify(newFilterState));
+      await setSecureItem(STORAGE_KEYS.FILTER_STATE, JSON.stringify(newFilterState));
       setFilterState(newFilterState);
     } catch (error) {
       console.error('Failed to save filter state:', error);

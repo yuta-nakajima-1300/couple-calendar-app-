@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from 'firebase/auth';
 import { authService, UserProfile } from '../services/authService';
+import { setSecureItem, getSecureItem, deleteSecureItem, SecureKeys } from '../utils/secureStorage';
 
 interface AuthContextType {
   user: User | null;
@@ -53,9 +54,31 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
       if (user) {
         console.log('User authenticated, fetching profile...');
         await fetchUserProfile(user.uid);
+        
+        // 認証トークンを暗号化して保存
+        try {
+          const token = await user.getIdToken();
+          await setSecureItem(SecureKeys.USER_TOKEN, token);
+          
+          // リフレッシュトークンも保存（利用可能な場合）
+          const refreshToken = user.refreshToken;
+          if (refreshToken) {
+            await setSecureItem(SecureKeys.REFRESH_TOKEN, refreshToken);
+          }
+        } catch (error) {
+          console.error('Failed to save auth tokens:', error);
+        }
       } else {
         console.log('User not authenticated, clearing profile');
         setUserProfile(null);
+        
+        // 保存されているトークンを削除
+        try {
+          await deleteSecureItem(SecureKeys.USER_TOKEN);
+          await deleteSecureItem(SecureKeys.REFRESH_TOKEN);
+        } catch (error) {
+          console.error('Failed to clear auth tokens:', error);
+        }
       }
       
       console.log('Auth loading completed');
@@ -88,6 +111,15 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
       await authService.signOut();
       setUser(null);
       setUserProfile(null);
+      
+      // 保存されているトークンを削除
+      try {
+        await deleteSecureItem(SecureKeys.USER_TOKEN);
+        await deleteSecureItem(SecureKeys.REFRESH_TOKEN);
+        await deleteSecureItem(SecureKeys.COUPLE_CODE);
+      } catch (error) {
+        console.error('Failed to clear secure data:', error);
+      }
     } catch (error) {
       console.error('Sign out failed:', error);
       throw error;
@@ -108,6 +140,13 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
       if (success) {
         // ユーザープロフィールを再取得
         await fetchUserProfile(user.uid);
+        
+        // カップルコードを暗号化して保存
+        try {
+          await setSecureItem(SecureKeys.COUPLE_CODE, inviteCode);
+        } catch (error) {
+          console.error('Failed to save couple code:', error);
+        }
       }
       
       return success;
@@ -129,6 +168,13 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
       if (success) {
         // ユーザープロフィールを再取得
         await fetchUserProfile(user.uid);
+        
+        // カップルコードを削除
+        try {
+          await deleteSecureItem(SecureKeys.COUPLE_CODE);
+        } catch (error) {
+          console.error('Failed to clear couple code:', error);
+        }
       }
       
       return success;

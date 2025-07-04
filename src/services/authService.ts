@@ -19,6 +19,7 @@ import {
 } from 'firebase/firestore';
 import { auth, getSafeDb, googleProvider } from '../config/firebase';
 import { Platform } from 'react-native';
+import { withRateLimit, RateLimitConfig } from '../utils/rateLimiter';
 
 export interface UserProfile {
   uid: string;
@@ -98,9 +99,42 @@ class AuthService {
     }
   }
 
-  // 招待コード生成
+  // 招待コード生成 - セキュアな生成方法
   generateInviteCode(): string {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    // より安全な招待コード生成
+    const characters = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789'; // 0, O, I, L を除外
+    const length = 8;
+    let result = '';
+    
+    // crypto.getRandomValues() を使用してセキュアな乱数を生成
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const array = new Uint32Array(length);
+      crypto.getRandomValues(array);
+      
+      for (let i = 0; i < length; i++) {
+        result += characters.charAt(array[i] % characters.length);
+      }
+    } else {
+      // フォールバック: 複数の乱数源を組み合わせ
+      const timestamp = Date.now().toString(36);
+      const randomPart = Math.random().toString(36).substring(2, 10);
+      const combined = (timestamp + randomPart).toUpperCase();
+      
+      // 結果から8文字を選択
+      for (let i = 0; i < length && i < combined.length; i++) {
+        const char = combined[i];
+        if (characters.includes(char)) {
+          result += char;
+        }
+      }
+      
+      // 不足分を補完
+      while (result.length < length) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+    }
+    
+    return result;
   }
 
   // ユーザープロフィール取得
@@ -125,10 +159,23 @@ class AuthService {
   // 招待コードでパートナーを検索
   async findUserByInviteCode(inviteCode: string): Promise<UserProfile | null> {
     try {
+      // 入力値検証
+      if (!inviteCode || typeof inviteCode !== 'string') {
+        throw new Error('無効な招待コードです');
+      }
+      
+      // 招待コードの形式チェック
+      const cleanCode = inviteCode.trim().toUpperCase();
+      const codePattern = /^[A-Z0-9]{6,10}$/;
+      
+      if (!codePattern.test(cleanCode)) {
+        throw new Error('招待コードの形式が正しくありません');
+      }
+      
       const database = getSafeDb();
       if (!database) throw new Error('Database not available');
       const usersRef = collection(database, 'users');
-      const q = query(usersRef, where('inviteCode', '==', inviteCode.toUpperCase()));
+      const q = query(usersRef, where('inviteCode', '==', cleanCode));
       const querySnapshot = await getDocs(q);
       
       if (!querySnapshot.empty) {
@@ -145,9 +192,14 @@ class AuthService {
 
   // カップル連携
   async linkCouple(currentUserId: string, partnerInviteCode: string): Promise<boolean> {
-    try {
-      // パートナーを検索
-      const partner = await this.findUserByInviteCode(partnerInviteCode);
+    // レート制限を適用
+    return withRateLimit(
+      `invite_code_${currentUserId}`,
+      RateLimitConfig.INVITE_CODE,
+      async () => {
+        try {
+          // パートナーを検索
+          const partner = await this.findUserByInviteCode(partnerInviteCode);
       if (!partner) {
         throw new Error('パートナーが見つかりません');
       }
@@ -205,11 +257,13 @@ class AuthService {
         updatedAt: serverTimestamp(),
       });
 
-      return true;
-    } catch (error) {
-      console.error('Failed to link couple:', error);
-      throw error;
-    }
+          return true;
+        } catch (error) {
+          console.error('Failed to link couple:', error);
+          throw error;
+        }
+      }
+    );
   }
 
   // カップル連携を解除

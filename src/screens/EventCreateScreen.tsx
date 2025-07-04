@@ -23,6 +23,14 @@ import { EventCategory, DEFAULT_CATEGORIES, RecurringRule } from '../types';
 import { EventOwnerType } from '../types/coupleTypes';
 import { useCouple } from '../contexts/CoupleContext';
 import { generateRecurringEvents, generateRecurringId, getRecurringEventSummary } from '../utils/recurringEventGenerator';
+import { 
+  validateEventTitle, 
+  validateEventDescription, 
+  validateDate, 
+  validateTime,
+  sanitizeInput,
+  escapeHtml 
+} from '../utils/securityUtils';
 
 export default function EventCreateScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
@@ -45,25 +53,40 @@ export default function EventCreateScreen() {
   const [ownerType, setOwnerType] = useState<EventOwnerType>(settings.defaultEventType);
 
   const handleSave = async () => {
-    if (!title.trim()) {
-      Alert.alert('エラー', 'タイトルを入力してください');
+    // セキュアな入力値検証
+    const titleValidation = validateEventTitle(title);
+    if (!titleValidation.isValid) {
+      Alert.alert('エラー', titleValidation.error || 'タイトルが無効です');
       return;
     }
 
-    if (!date.trim()) {
-      Alert.alert('エラー', '日付を選択してください');
+    const descriptionValidation = validateEventDescription(description);
+    if (!descriptionValidation.isValid) {
+      Alert.alert('エラー', descriptionValidation.error || '説明が無効です');
       return;
     }
 
-    // Validate time format if provided
-    if (!isAllDay && time && !/^\d{2}:\d{2}$/.test(time)) {
-      Alert.alert('エラー', '時刻の形式が正しくありません（HH:MM）');
+    const dateValidation = validateDate(date);
+    if (!dateValidation.isValid) {
+      Alert.alert('エラー', dateValidation.error || '日付が無効です');
       return;
     }
 
-    if (!isAllDay && endTime && !/^\d{2}:\d{2}$/.test(endTime)) {
-      Alert.alert('エラー', '終了時刻の形式が正しくありません（HH:MM）');
-      return;
+    // 時刻の検証
+    if (!isAllDay && time) {
+      const timeValidation = validateTime(time);
+      if (!timeValidation.isValid) {
+        Alert.alert('エラー', timeValidation.error || '開始時刻が無効です');
+        return;
+      }
+    }
+
+    if (!isAllDay && endTime) {
+      const endTimeValidation = validateTime(endTime);
+      if (!endTimeValidation.isValid) {
+        Alert.alert('エラー', endTimeValidation.error || '終了時刻が無効です');
+        return;
+      }
     }
 
     try {
@@ -73,8 +96,8 @@ export default function EventCreateScreen() {
         // 繰り返し予定の場合
         const recurringId = generateRecurringId();
         const baseEventData = {
-          title: title.trim(),
-          description: description.trim(),
+          title: sanitizeInput(title.trim(), { maxLength: 100, removeHtml: true }),
+          description: sanitizeInput(description.trim(), { maxLength: 500, removeHtml: true }),
           time: isAllDay ? undefined : time || undefined,
           endTime: isAllDay ? undefined : endTime || undefined,
           isAllDay,
@@ -103,8 +126,8 @@ export default function EventCreateScreen() {
       } else {
         // 通常の予定
         await createEvent({
-          title: title.trim(),
-          description: description.trim(),
+          title: sanitizeInput(title.trim(), { maxLength: 100, removeHtml: true }),
+          description: sanitizeInput(description.trim(), { maxLength: 500, removeHtml: true }),
           date,
           endDate,
           time: isAllDay ? undefined : time || undefined,

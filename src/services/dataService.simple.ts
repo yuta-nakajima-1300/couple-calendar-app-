@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setSecureItem, getSecureItem, deleteSecureItem } from '../utils/secureStorage';
 
 export interface SimpleEvent {
   id: string;
@@ -22,8 +23,8 @@ export interface SimpleAnniversary {
   createdAt: string;
 }
 
-const EVENTS_STORAGE_KEY = '@couple_calendar_events';
-const ANNIVERSARIES_STORAGE_KEY = '@couple_calendar_anniversaries';
+const EVENTS_STORAGE_KEY = 'couple_calendar_events';
+const ANNIVERSARIES_STORAGE_KEY = 'couple_calendar_anniversaries';
 
 export class SimpleDataService {
   // Event CRUD (simplified)
@@ -55,7 +56,7 @@ export class SimpleDataService {
       };
       
       events.push(event);
-      await AsyncStorage.setItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(events));
+      await setSecureItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(events));
       return event;
     } catch (error) {
       console.error('Failed to create event:', error);
@@ -65,7 +66,7 @@ export class SimpleDataService {
   
   static async getUserEvents(userId: string): Promise<SimpleEvent[]> {
     try {
-      const eventsJson = await AsyncStorage.getItem(`${EVENTS_STORAGE_KEY}_${userId}`);
+      const eventsJson = await getSecureItem(`${EVENTS_STORAGE_KEY}_${userId}`);
       if (!eventsJson) return [];
       
       try {
@@ -73,7 +74,7 @@ export class SimpleDataService {
         // 配列かどうかチェック
         if (!Array.isArray(parsed)) {
           console.warn('Events data is not an array, resetting to empty array');
-          await AsyncStorage.removeItem(`${EVENTS_STORAGE_KEY}_${userId}`);
+          await deleteSecureItem(`${EVENTS_STORAGE_KEY}_${userId}`);
           return [];
         }
         return parsed;
@@ -98,7 +99,7 @@ export class SimpleDataService {
       }
       
       events[eventIndex] = { ...events[eventIndex], ...updates };
-      await AsyncStorage.setItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(events));
+      await setSecureItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(events));
       return events[eventIndex];
     } catch (error) {
       console.error('Failed to update event:', error);
@@ -110,7 +111,7 @@ export class SimpleDataService {
     try {
       const events = await this.getUserEvents(userId);
       const filteredEvents = events.filter(e => e.id !== eventId);
-      await AsyncStorage.setItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(filteredEvents));
+      await setSecureItem(`${EVENTS_STORAGE_KEY}_${userId}`, JSON.stringify(filteredEvents));
     } catch (error) {
       console.error('Failed to delete event:', error);
       throw error;
@@ -130,7 +131,7 @@ export class SimpleDataService {
       };
       
       anniversaries.push(anniversary);
-      await AsyncStorage.setItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(anniversaries));
+      await setSecureItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(anniversaries));
       return anniversary;
     } catch (error) {
       console.error('Failed to create anniversary:', error);
@@ -140,7 +141,7 @@ export class SimpleDataService {
   
   static async getCoupleAnniversaries(coupleId: string): Promise<SimpleAnniversary[]> {
     try {
-      const anniversariesJson = await AsyncStorage.getItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`);
+      const anniversariesJson = await getSecureItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`);
       if (!anniversariesJson) return [];
       
       try {
@@ -148,7 +149,7 @@ export class SimpleDataService {
         // 配列かどうかチェック
         if (!Array.isArray(parsed)) {
           console.warn('Anniversaries data is not an array, resetting to empty array');
-          await AsyncStorage.removeItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`);
+          await deleteSecureItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`);
           return [];
         }
         return parsed;
@@ -173,7 +174,7 @@ export class SimpleDataService {
       }
       
       anniversaries[anniversaryIndex] = { ...anniversaries[anniversaryIndex], ...updates };
-      await AsyncStorage.setItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(anniversaries));
+      await setSecureItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(anniversaries));
       return anniversaries[anniversaryIndex];
     } catch (error) {
       console.error('Failed to update anniversary:', error);
@@ -185,7 +186,7 @@ export class SimpleDataService {
     try {
       const anniversaries = await this.getCoupleAnniversaries(coupleId);
       const filteredAnniversaries = anniversaries.filter(a => a.id !== anniversaryId);
-      await AsyncStorage.setItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(filteredAnniversaries));
+      await setSecureItem(`${ANNIVERSARIES_STORAGE_KEY}_${coupleId}`, JSON.stringify(filteredAnniversaries));
     } catch (error) {
       console.error('Failed to delete anniversary:', error);
       throw error;

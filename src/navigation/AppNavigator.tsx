@@ -9,6 +9,7 @@ import AnniversaryCreateScreen from '../screens/AnniversaryCreateScreen';
 import CoupleSettingsScreen from '../screens/CoupleSettingsScreen';
 import EventCreateScreen from '../screens/EventCreateScreen';
 import EventEditScreen from '../screens/EventEditScreen';
+import { SecurityDiagnosticsScreen } from '../screens/SecurityDiagnosticsScreen';
 
 import { RootStackParamList, MainTabParamList, CalendarStackParamList, AnniversaryStackParamList } from '../types/navigation';
 
@@ -16,6 +17,7 @@ const RootStack = createStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const CalendarStack = createStackNavigator<CalendarStackParamList>();
 const AnniversaryStack = createStackNavigator<AnniversaryStackParamList>();
+const SettingsStack = createStackNavigator();
 
 function CalendarNavigator() {
   return (
@@ -56,6 +58,23 @@ function AnniversaryNavigator() {
   );
 }
 
+function SettingsNavigator() {
+  return (
+    <SettingsStack.Navigator>
+      <SettingsStack.Screen 
+        name="SettingsHome" 
+        component={CoupleSettingsScreen}
+        options={{ title: '設定' }}
+      />
+      <SettingsStack.Screen 
+        name="SecurityDiagnostics" 
+        component={SecurityDiagnosticsScreen}
+        options={{ title: 'セキュリティ診断' }}
+      />
+    </SettingsStack.Navigator>
+  );
+}
+
 function MainNavigator() {
   return (
     <MainTab.Navigator
@@ -82,8 +101,11 @@ function MainNavigator() {
       />
       <MainTab.Screen 
         name="Settings" 
-        component={CoupleSettingsScreen}
-        options={{ title: '設定' }}
+        component={SettingsNavigator}
+        options={{ 
+          title: '設定',
+          headerShown: false 
+        }}
       />
     </MainTab.Navigator>
   );
