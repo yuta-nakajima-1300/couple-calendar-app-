@@ -44,7 +44,7 @@ export default function CalendarScreen() {
   });
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('');
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().split('T')[0]);
   const { filterState, isEventVisible, getEventColor, getEventOwnerInitial, settings } = useCouple();
 
   const displayedEvents = useMemo(() => {
@@ -91,30 +91,38 @@ export default function CalendarScreen() {
   // スワイプナビゲーション
   const handleSwipeLeft = () => {
     // 左スワイプ = 次月
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    setCurrentMonth(nextMonth);
+    const currentDate = new Date(currentMonth);
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    const newMonth = currentDate.toISOString().split('T')[0];
+    console.log('Swipe left - moving to next month:', newMonth);
+    setCurrentMonth(newMonth);
   };
 
   const handleSwipeRight = () => {
     // 右スワイプ = 前月
-    const prevMonth = new Date(currentMonth);
-    prevMonth.setMonth(prevMonth.getMonth() - 1);
-    setCurrentMonth(prevMonth);
+    const currentDate = new Date(currentMonth);
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    const newMonth = currentDate.toISOString().split('T')[0];
+    console.log('Swipe right - moving to previous month:', newMonth);
+    setCurrentMonth(newMonth);
   };
 
   const handleSwipeUp = () => {
     // 上スワイプ = 次月（垂直方向設定時）
-    const nextMonth = new Date(currentMonth);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-    setCurrentMonth(nextMonth);
+    const currentDate = new Date(currentMonth);
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    const newMonth = currentDate.toISOString().split('T')[0];
+    console.log('Swipe up - moving to next month:', newMonth);
+    setCurrentMonth(newMonth);
   };
 
   const handleSwipeDown = () => {
     // 下スワイプ = 前月（垂直方向設定時）
-    const prevMonth = new Date(currentMonth);
-    prevMonth.setMonth(prevMonth.getMonth() - 1);
-    setCurrentMonth(prevMonth);
+    const currentDate = new Date(currentMonth);
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    const newMonth = currentDate.toISOString().split('T')[0];
+    console.log('Swipe down - moving to previous month:', newMonth);
+    setCurrentMonth(newMonth);
   };
 
   const renderEvent = ({ item }: { item: Event }) => {
@@ -221,32 +229,11 @@ export default function CalendarScreen() {
           textDayFontSize: isMobile ? 14 : 16,
           textMonthFontSize: isMobile ? 14 : 16,
           textDayHeaderFontSize: isMobile ? 11 : 13,
-          // 土日祝の色分け
-          'stylesheet.calendar.header': {
-            dayTextAtIndex0: {
-              color: '#dc143c', // 日曜日：赤
-              fontWeight: 'bold',
-            },
-            dayTextAtIndex6: {
-              color: '#0066cc', // 土曜日：青
-              fontWeight: 'bold',
-            },
-          },
-          'stylesheet.calendar.main': {
-            dayTextAtIndex0: {
-              color: '#dc143c', // 日曜日：赤
-              fontWeight: 'bold',
-            },
-            dayTextAtIndex6: {
-              color: '#0066cc', // 土曜日：青
-              fontWeight: 'bold',
-            },
-          },
         }}
         onDayPress={(day) => {
           setSelectedDate(day.dateString);
         }}
-        markedDates={calendarResult.markedDates}
+        markedDates={calendarResult.markedDates as any}
         markingType="multi-dot"
         monthFormat={'yyyy年 MM月'}
         hideExtraDays={true}
@@ -259,9 +246,10 @@ export default function CalendarScreen() {
         disableArrowLeft={false}
         disableArrowRight={false}
         disableAllTouchEventsForDisabledDays={true}
-        current={currentMonth.toISOString().split('T')[0]}
+        current={currentMonth}
         onMonthChange={(month) => {
-          setCurrentMonth(new Date(month.dateString));
+          console.log('Month changed via calendar:', month.dateString);
+          setCurrentMonth(month.dateString);
         }}
         renderHeader={(date) => {
           return (

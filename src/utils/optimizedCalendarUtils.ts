@@ -177,6 +177,7 @@ export function applySelectedDateMarking(
     customTextStyle: {
       ...updatedDates[selectedDate].customTextStyle,
       color: '#FFFFFF',
+      fontWeight: 'bold' as any,
     }
   };
 

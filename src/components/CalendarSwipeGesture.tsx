@@ -100,8 +100,10 @@ export default function CalendarSwipeGesture({
           style={styles.gestureArea}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
+          {...(Platform.OS === 'web' && {
+            onMouseDown: handleMouseDown,
+            onMouseUp: handleMouseUp,
+          })}
         >
           {children}
         </View>

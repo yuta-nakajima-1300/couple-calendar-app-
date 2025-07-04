@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
   googleIcon: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
     marginRight: 12,
     backgroundColor: '#fff',
     color: '#ff6b6b',
