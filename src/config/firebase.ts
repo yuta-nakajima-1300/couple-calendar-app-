@@ -1,111 +1,49 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+  import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+  import { getFirestore } from 'firebase/firestore';
+  import { getDatabase } from 'firebase/database';
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
-};
+  // 一時的にハードコード（本番環境でのみ）
+  const firebaseConfig = {
+    apiKey: "AIzaSyA6rjou9WjkG-Ivqfpqcis5jZXbGLfyXDY",
+    authDomain: "couple-calendar-app-ac225.firebaseapp.com",
+    projectId: "couple-calendar-app-ac225",
+    storageBucket: "couple-calendar-app-ac225.firebasestorage.app",
+    messagingSenderId: "1093220447522",
+    appId: "1:1093220447522:web:9d96a3e6087f9ad4f6217b",
+    measurementId: "G-00RBKPTXQ7"
+  };
 
-// Validate required environment variables
-const requiredEnvVars = [
-  'EXPO_PUBLIC_FIREBASE_API_KEY',
-  'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
-  'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  'EXPO_PUBLIC_FIREBASE_APP_ID'
-];
+  // Initialize Firebase
+  const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  // Initialize services
+  export const auth = getAuth(app);
+  export const googleProvider = new GoogleAuthProvider();
 
-if (missingEnvVars.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}`);
-}
+  let db: any = null;
+  let database: any = null;
 
-// Initialize Firebase with error handling
-let app: any;
-try {
-  console.log('Initializing Firebase with config:', {
-    apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
-    authDomain: firebaseConfig.authDomain,
-    projectId: firebaseConfig.projectId,
-    environment: process.env.EXPO_PUBLIC_ENVIRONMENT || 'production'
-  });
-  app = initializeApp(firebaseConfig);
-  console.log('Firebase app initialized successfully');
-} catch (error) {
-  console.error('Firebase app initialization failed:', error);
-  throw error;
-}
-
-// Initialize Firebase services with proper error handling
-export const auth = getAuth(app);
-
-// Lazy initialization for web environments
-let _db: any = null;
-let _storage: any = null;
-
-export const getDb = () => {
-  if (!_db) {
-    try {
-      console.log('Initializing Firestore...');
-      _db = getFirestore(app);
-      console.log('Firestore initialized successfully');
-    } catch (error) {
-      console.error('Firebase Firestore initialization failed:', error);
-      throw new Error('Firebase Firestore not available');
+  export const getSafeDb = () => {
+    if (!db) {
+      try {
+        db = getFirestore(app);
+      } catch (error) {
+        console.error('Failed to initialize Firestore:', error);
+      }
     }
-  }
-  return _db;
-};
+    return db;
+  };
 
-export const getStorageInstance = () => {
-  if (!_storage) {
-    try {
-      _storage = getStorage(app);
-    } catch (error) {
-      console.warn('Firebase Storage initialization failed:', error);
-      throw new Error('Firebase Storage not available');
+  export const getSafeDatabase = () => {
+    if (!database) {
+      try {
+        database = getDatabase(app);
+      } catch (error) {
+        console.error('Failed to initialize Realtime Database:', error);
+      }
     }
-  }
-  return _storage;
-};
+    return database;
+  };
 
-// Legacy exports - completely lazy initialization
-export const db = null; // Force lazy initialization
-export const storage = null; // Force lazy initialization
-
-// Safe getter functions that always work
-export const getSafeDb = () => {
-  try {
-    return getDb();
-  } catch (error) {
-    console.warn('Database not available:', error);
-    return null;
-  }
-};
-
-export const getSafeStorage = () => {
-  try {
-    return getStorageInstance();
-  } catch (error) {
-    console.warn('Storage not available:', error);
-    return null;
-  }
-};
-
-// Google Auth Provider
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account',
-});
-
-export default app;
+  export { app };
