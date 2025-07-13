@@ -4,6 +4,7 @@ import { Event } from '../types';
 import { getDateColor, getDateType, DATE_COLORS } from './dateUtils';
 import { performanceTracker } from './performanceTracker';
 import { calendarCache } from './calendarCache';
+import { COUPLE_COLORS, EventOwnerType } from '../types/coupleTypes';
 
 export interface DateRange {
   start: string; // YYYY-MM-DD
@@ -37,6 +38,22 @@ export interface CalendarProcessingResult {
   processedEventCount: number;
   processingTime: number;
   dateRange: DateRange;
+}
+
+/**
+ * 所有者タイプに基づいて美しいドット色を取得
+ */
+function getStylishDotColor(ownerType: EventOwnerType | undefined): string {
+  switch (ownerType) {
+    case 'mine':
+      return COUPLE_COLORS.mine.primary;
+    case 'partner':
+      return COUPLE_COLORS.partner.primary;
+    case 'shared':
+      return COUPLE_COLORS.shared.primary;
+    default:
+      return COUPLE_COLORS.shared.primary;
+  }
 }
 
 /**
@@ -242,29 +259,36 @@ export function processEventMarkings(
           dates[dateString].dots = [];
         }
         
-        dates[dateString].dots!.push({ color: event.category.color });
+        // 所有者タイプに基づいた美しいドット色を使用
+        const ownerType = (event as any).ownerType as EventOwnerType;
+        const dotColor = getStylishDotColor(ownerType);
+        dates[dateString].dots!.push({ color: dotColor });
         
         // 予定がある場合、既存の背景色スタイルにボーダーを追加、または平日の場合は薄い背景色を追加
         if (dates[dateString].customStyles) {
           dates[dateString].customStyles.container = {
             ...dates[dateString].customStyles.container,
             borderWidth: 2,
-            borderColor: event.category.color,
+            borderColor: dotColor,
           };
         } else {
           // 平日に予定がある場合は薄い背景色を追加
+          const lightBgColor = ownerType === 'mine' ? 'rgba(255, 107, 157, 0.08)' :
+                              ownerType === 'partner' ? 'rgba(78, 205, 196, 0.08)' :
+                              'rgba(255, 135, 135, 0.08)';
+          
           dates[dateString].customStyles = {
             container: {
-              backgroundColor: '#f5f5f5',
-              borderRadius: 6,
+              backgroundColor: lightBgColor,
+              borderRadius: 8,
               justifyContent: 'center',
               alignItems: 'center',
-              borderWidth: 2,
-              borderColor: event.category.color,
+              borderWidth: 1.5,
+              borderColor: dotColor,
             },
             text: {
-              color: '#333333',
-              fontWeight: 'normal',
+              color: '#2d3748',
+              fontWeight: '500',
             }
           };
         }
@@ -334,29 +358,36 @@ export function processEventMarkings(
           dates[event.date].dots = [];
         }
         
-        dates[event.date].dots!.push({ color: event.category.color });
+        // 所有者タイプに基づいた美しいドット色を使用
+        const ownerType = (event as any).ownerType as EventOwnerType;
+        const dotColor = getStylishDotColor(ownerType);
+        dates[event.date].dots!.push({ color: dotColor });
         
         // 予定がある場合、既存の背景色スタイルにボーダーを追加、または平日の場合は薄い背景色を追加
         if (dates[event.date].customStyles) {
           dates[event.date].customStyles.container = {
             ...dates[event.date].customStyles.container,
             borderWidth: 2,
-            borderColor: event.category.color,
+            borderColor: dotColor,
           };
         } else {
           // 平日に予定がある場合は薄い背景色を追加
+          const lightBgColor = ownerType === 'mine' ? 'rgba(255, 107, 157, 0.08)' :
+                              ownerType === 'partner' ? 'rgba(78, 205, 196, 0.08)' :
+                              'rgba(255, 135, 135, 0.08)';
+          
           dates[event.date].customStyles = {
             container: {
-              backgroundColor: '#f5f5f5',
-              borderRadius: 6,
+              backgroundColor: lightBgColor,
+              borderRadius: 8,
               justifyContent: 'center',
               alignItems: 'center',
-              borderWidth: 2,
-              borderColor: event.category.color,
+              borderWidth: 1.5,
+              borderColor: dotColor,
             },
             text: {
-              color: '#333333',
-              fontWeight: 'normal',
+              color: '#2d3748',
+              fontWeight: '500',
             }
           };
         }
