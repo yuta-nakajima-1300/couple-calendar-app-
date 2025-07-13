@@ -35,10 +35,13 @@ export default function CalendarSwipeGesture({
 }: CalendarSwipeGestureProps) {
   const { settings } = useCouple();
   const { direction, sensitivity } = settings.swipeSettings;
+  
+  // モバイルWeb判定
+  const isMobileWeb = Platform.OS === 'web' && screenWidth < 768;
 
   // デバッグ用ログ
   console.log('CalendarSwipeGesture rendered with settings:', { direction, sensitivity });
-  console.log('Gesture handler will be recreated with threshold:', threshold);
+  console.log('Is mobile web:', isMobileWeb);
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
@@ -120,59 +123,75 @@ export default function CalendarSwipeGesture({
     };
   });
 
-  // Web環境対応
+  // Web環境対応（モバイルWeb対応改善）
+  const startPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  // モバイルWebの場合は簡素化されたジェスチャー処理
   if (Platform.OS === 'web') {
-    const handleStart = (e: any, clientX: number, clientY: number) => {
-      e.currentTarget.startX = clientX;
-      e.currentTarget.startY = clientY;
+    const handleStart = (clientX: number, clientY: number) => {
+      startPosRef.current = { x: clientX, y: clientY };
     };
 
-    const handleEnd = (e: any, clientX: number, clientY: number) => {
-      if (!e.currentTarget.startX || !e.currentTarget.startY) return;
+    const handleEnd = (clientX: number, clientY: number) => {
+      if (!startPosRef.current) return;
       
-      const diffX = e.currentTarget.startX - clientX;
-      const diffY = e.currentTarget.startY - clientY;
+      const diffX = startPosRef.current.x - clientX;
+      const diffY = startPosRef.current.y - clientY;
       
       processSwipe(diffX, diffY);
+      startPosRef.current = null;
     };
 
     const handleTouchStart = (e: any) => {
-      handleStart(e, e.touches[0].clientX, e.touches[0].clientY);
+      e.preventDefault(); // スクロール防止
+      if (e.touches && e.touches[0]) {
+        handleStart(e.touches[0].clientX, e.touches[0].clientY);
+      }
     };
 
     const handleTouchEnd = (e: any) => {
-      handleEnd(e, e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      e.preventDefault();
+      if (e.changedTouches && e.changedTouches[0]) {
+        handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      }
     };
 
     const handleMouseDown = (e: any) => {
-      handleStart(e, e.clientX, e.clientY);
+      handleStart(e.clientX, e.clientY);
     };
 
     const handleMouseUp = (e: any) => {
-      handleEnd(e, e.clientX, e.clientY);
+      handleEnd(e.clientX, e.clientY);
     };
 
     const processSwipe = (diffX: number, diffY: number) => {
-      console.log('Processing swipe:', { diffX, diffY, direction, threshold });
+      console.log('Processing swipe:', { diffX, diffY, direction, threshold, isMobileWeb });
       
-      if (direction === 'horizontal') {
-        if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) {
-          console.log('Horizontal swipe triggered:', diffX > 0 ? 'left' : 'right');
-          if (diffX > 0) {
-            onSwipeLeft();
-          } else {
-            onSwipeRight();
+      // モバイルWebでは閾値を小さくして反応を良くする
+      const effectiveThreshold = isMobileWeb ? Math.min(threshold, 50) : threshold;
+      
+      try {
+        if (direction === 'horizontal') {
+          if (Math.abs(diffX) > effectiveThreshold && Math.abs(diffX) > Math.abs(diffY)) {
+            console.log('Horizontal swipe triggered:', diffX > 0 ? 'left' : 'right');
+            if (diffX > 0) {
+              onSwipeLeft();
+            } else {
+              onSwipeRight();
+            }
+          }
+        } else {
+          if (Math.abs(diffY) > effectiveThreshold && Math.abs(diffY) > Math.abs(diffX)) {
+            console.log('Vertical swipe triggered:', diffY > 0 ? 'up' : 'down');
+            if (diffY > 0) {
+              onSwipeUp && onSwipeUp();
+            } else {
+              onSwipeDown && onSwipeDown();
+            }
           }
         }
-      } else {
-        if (Math.abs(diffY) > threshold && Math.abs(diffY) > Math.abs(diffX)) {
-          console.log('Vertical swipe triggered:', diffY > 0 ? 'up' : 'down');
-          if (diffY > 0) {
-            onSwipeUp && onSwipeUp();
-          } else {
-            onSwipeDown && onSwipeDown();
-          }
-        }
+      } catch (error) {
+        console.error('Swipe processing error:', error);
       }
     };
 
@@ -184,6 +203,21 @@ export default function CalendarSwipeGesture({
           onTouchEnd={handleTouchEnd}
           onMouseDown={handleMouseDown}
           onMouseUp={handleMouseUp}
+        >
+          {children}
+        </View>
+      </View>
+    );
+  }
+
+  // モバイルWebの場合は、React Native Gestureを使わない
+  if (isMobileWeb) {
+    return (
+      <View style={styles.container}>
+        <View 
+          style={styles.gestureArea}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {children}
         </View>

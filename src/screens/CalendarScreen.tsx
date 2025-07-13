@@ -31,6 +31,7 @@ import { japaneseHolidays, getHolidayName } from '../constants/japaneseHolidays'
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
 const isMobile = Platform.OS !== 'web' || screenWidth < 768;
+const isMobileWeb = Platform.OS === 'web' && screenWidth < 768;
 
 export default function CalendarScreen() {
   const navigation = useNavigation<NavigationProp<CalendarStackParamList>>();
