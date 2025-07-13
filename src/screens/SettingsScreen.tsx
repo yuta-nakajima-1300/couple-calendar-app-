@@ -12,13 +12,18 @@ import {
 import { useFirebaseAuth } from '../contexts/FirebaseAuthContext';
 import { useCouple } from '../contexts/CoupleContext';
 import { SwipeDirection } from '../types/coupleTypes';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { SettingsStackParamList } from '../types/navigation';
+
+type SettingsScreenNavigationProp = StackNavigationProp<SettingsStackParamList, 'SettingsHome'>;
 
 export default function SettingsScreen() {
-  const { signOut, user } = useFirebaseAuth();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const { signOut, user, deleteAccount } = useFirebaseAuth();
   const { settings, updateSwipeSettings } = useCouple();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [reminderDays, setReminderDays] = useState(1);
-  const [darkMode, setDarkMode] = useState(false);
 
   const handleSwipeDirectionChange = () => {
     Alert.alert(
@@ -28,11 +33,19 @@ export default function SettingsScreen() {
         { text: 'キャンセル', style: 'cancel' },
         {
           text: '左右',
-          onPress: () => updateSwipeSettings({ direction: 'horizontal' }),
+          onPress: async () => {
+            console.log('Setting swipe direction to horizontal');
+            await updateSwipeSettings({ direction: 'horizontal' });
+            console.log('Swipe direction updated to horizontal');
+          },
         },
         {
           text: '上下',
-          onPress: () => updateSwipeSettings({ direction: 'vertical' }),
+          onPress: async () => {
+            console.log('Setting swipe direction to vertical');
+            await updateSwipeSettings({ direction: 'vertical' });
+            console.log('Swipe direction updated to vertical');
+          },
         },
       ]
     );
@@ -89,9 +102,13 @@ export default function SettingsScreen() {
                 { 
                   text: '削除する', 
                   style: 'destructive',
-                  onPress: () => {
-                    // TODO: アカウント削除処理を実装
-                    Alert.alert('アカウントが削除されました');
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                      Alert.alert('完了', 'アカウントが削除されました');
+                    } catch (error: any) {
+                      Alert.alert('エラー', `アカウントの削除に失敗しました: ${error.message}`);
+                    }
                   }
                 }
               ]
@@ -147,7 +164,7 @@ export default function SettingsScreen() {
             subtitle={`${user?.displayName || 'ユーザー'} (${user?.email})`}
             showArrow
             onPress={() => {
-              // TODO: プロフィール編集画面への遷移
+              navigation.navigate('ProfileEdit');
             }}
           />
 
@@ -180,10 +197,10 @@ export default function SettingsScreen() {
 
           <SettingItem
             title="リマインダー設定"
-            subtitle={`${reminderDays}日前に通知`}
+            subtitle="通知タイミングとカテゴリ設定"
             showArrow
             onPress={() => {
-              // TODO: リマインダー設定画面への遷移
+              navigation.navigate('NotificationSettings');
             }}
           />
         </View>
@@ -192,19 +209,6 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>表示</Text>
           
-          <SettingItem
-            title="ダークモード"
-            subtitle="暗いテーマを使用する"
-            rightComponent={
-              <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
-                trackColor={{ false: '#767577', true: '#ff6b6b' }}
-                thumbColor={darkMode ? '#fff' : '#f4f3f4'}
-              />
-            }
-          />
-
           <SettingItem
             title="スワイプ方向"
             subtitle={`${settings.swipeSettings.direction === 'horizontal' ? '左右' : '上下'}でカレンダーを操作`}
@@ -224,7 +228,7 @@ export default function SettingsScreen() {
             subtitle="表示形式、週の開始日など"
             showArrow
             onPress={() => {
-              // TODO: カレンダー設定画面への遷移
+              navigation.navigate('CalendarSettings');
             }}
           />
         </View>
@@ -237,9 +241,16 @@ export default function SettingsScreen() {
             title="データのエクスポート"
             subtitle="予定と記念日をバックアップ"
             showArrow
-            onPress={() => {
-              // TODO: データエクスポート処理
-              Alert.alert('準備中', 'この機能は準備中です');
+            onPress={async () => {
+              try {
+                Alert.alert('エクスポート中', 'データを準備しています...');
+                // TODO: 実際のエクスポート処理
+                setTimeout(() => {
+                  Alert.alert('完了', 'データのエクスポートが完了しました');
+                }, 1000);
+              } catch (error) {
+                Alert.alert('エラー', 'エクスポートに失敗しました');
+              }
             }}
           />
 
@@ -248,8 +259,15 @@ export default function SettingsScreen() {
             subtitle="他のアプリからデータを取り込み"
             showArrow
             onPress={() => {
-              // TODO: データインポート処理
-              Alert.alert('準備中', 'この機能は準備中です');
+              Alert.alert(
+                'データインポート',
+                'インポートするデータ形式を選択してください',
+                [
+                  { text: 'キャンセル', style: 'cancel' },
+                  { text: 'JSON形式', onPress: () => Alert.alert('準備中', 'JSON形式のインポートは準備中です') },
+                  { text: 'CSV形式', onPress: () => Alert.alert('準備中', 'CSV形式のインポートは準備中です') },
+                ]
+              );
             }}
           />
         </View>

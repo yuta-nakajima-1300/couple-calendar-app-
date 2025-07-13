@@ -90,7 +90,8 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
         eventData.isAllDay,
         eventData.isRecurring,
         eventData.recurringId,
-        eventData.recurringRule
+        eventData.recurringRule,
+        eventData.ownerType
       );
       
       // リアルタイム更新により自動的にeventsが更新される
@@ -105,6 +106,7 @@ export const FirebaseEventProvider: React.FC<FirebaseEventProviderProps> = ({ ch
         isAllDay: firebaseEvent.isAllDay || false,
         category: eventData.category,
         createdBy: firebaseEvent.createdBy,
+        ownerType: firebaseEvent.ownerType,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         isRecurring: firebaseEvent.isRecurring,

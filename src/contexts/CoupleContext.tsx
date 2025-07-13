@@ -9,6 +9,7 @@ import {
   EventOwnerType,
   FilterState,
   SwipeSettings,
+  CalendarSettings,
   DEFAULT_COUPLE_SETTINGS,
   DEFAULT_FILTER_STATE,
 } from '../types/coupleTypes';
@@ -25,6 +26,7 @@ interface CoupleContextType {
   updateDefaultEventType: (type: EventOwnerType) => Promise<void>;
   updateDisplaySettings: (showInitials: boolean, showNames: boolean) => Promise<void>;
   updateSwipeSettings: (swipeSettings: Partial<SwipeSettings>) => Promise<void>;
+  updateCalendarSettings: (calendarSettings: Partial<CalendarSettings>) => Promise<void>;
   
   // フィルター操作
   toggleFilter: (type: EventOwnerType) => void;
@@ -147,9 +149,23 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
   };
 
   const updateSwipeSettings = async (swipeSettings: Partial<SwipeSettings>) => {
+    console.log('Updating swipe settings:', swipeSettings);
+    console.log('Current settings:', settings.swipeSettings);
+    
     const newSettings = {
       ...settings,
       swipeSettings: { ...settings.swipeSettings, ...swipeSettings },
+    };
+    
+    console.log('New swipe settings:', newSettings.swipeSettings);
+    await saveSettings(newSettings);
+    console.log('Swipe settings saved successfully');
+  };
+
+  const updateCalendarSettings = async (calendarSettings: Partial<CalendarSettings>) => {
+    const newSettings = {
+      ...settings,
+      calendarSettings: { ...settings.calendarSettings, ...calendarSettings },
     };
     await saveSettings(newSettings);
   };
@@ -236,6 +252,7 @@ export function CoupleProvider({ children }: CoupleProviderProps) {
     updateDefaultEventType,
     updateDisplaySettings,
     updateSwipeSettings,
+    updateCalendarSettings,
     
     toggleFilter,
     setAllFilters,

@@ -37,6 +37,7 @@ export interface FirebaseEvent {
   category: string;
   createdBy: string;
   coupleId?: string;
+  ownerType?: 'mine' | 'partner' | 'shared';
   createdAt: any;
   updatedAt: any;
   // 繰り返し機能
@@ -72,7 +73,8 @@ class FirebaseDataService {
     isAllDay?: boolean,
     isRecurring?: boolean,
     recurringId?: string,
-    recurringRule?: any
+    recurringRule?: any,
+    ownerType?: 'mine' | 'partner' | 'shared'
   ): Promise<FirebaseEvent> {
     try {
       const database = checkFirebaseConnection();
@@ -86,6 +88,7 @@ class FirebaseDataService {
         isAllDay: isAllDay || false,
         category: categoryId || 'personal',
         createdBy: userId,
+        ownerType: ownerType || 'shared',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -312,6 +315,7 @@ class FirebaseDataService {
       isAllDay: firebaseEvent.isAllDay || false,
       category,
       createdBy: firebaseEvent.createdBy,
+      ownerType: firebaseEvent.ownerType || 'shared',
       createdAt: this.convertTimestamp(firebaseEvent.createdAt),
       updatedAt: this.convertTimestamp(firebaseEvent.updatedAt),
       isRecurring: firebaseEvent.isRecurring,

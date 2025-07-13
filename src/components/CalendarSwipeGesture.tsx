@@ -1,17 +1,22 @@
 // カレンダースワイプ操作コンポーネント
 
-import React, { useMemo } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { PanGestureHandler, GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, { useMemo, useRef } from 'react';
+import { View, StyleSheet, Platform, Dimensions } from 'react-native';
+import { PanGestureHandler, GestureHandlerRootView, State } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedGestureHandler,
   useAnimatedStyle,
   withSpring,
+  withTiming,
   runOnJS,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import { useCouple } from '../contexts/CoupleContext';
 import { SwipeDirection } from '../types/coupleTypes';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 interface CalendarSwipeGestureProps {
   children: React.ReactNode;
@@ -31,15 +36,93 @@ export default function CalendarSwipeGesture({
   const { settings } = useCouple();
   const { direction, sensitivity } = settings.swipeSettings;
 
+  // デバッグ用ログ
+  console.log('CalendarSwipeGesture rendered with settings:', { direction, sensitivity });
+  console.log('Gesture handler will be recreated with threshold:', threshold);
+
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(1);
 
-  // Web環境では簡易的なタッチ/マウスハンドリングに切り替え
+  // 感度設定から閾値を計算
+  const threshold = useMemo(() => {
+    const baseThreshold = screenWidth * 0.25; // 画面幅の25%
+    const sensitivityFactor = (6 - sensitivity) * 10;
+    return Math.max(50, baseThreshold - sensitivityFactor);
+  }, [sensitivity]);
+
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: (_, context: any) => {
+      context.startX = translateX.value;
+      context.startY = translateY.value;
+    },
+    onActive: (event, context) => {
+      if (direction === 'horizontal') {
+        translateX.value = context.startX + event.translationX * 0.3; // 軽微な追従
+      } else {
+        translateY.value = context.startY + event.translationY * 0.3;
+      }
+    },
+    onEnd: (event) => {
+      let shouldTriggerSwipe = false;
+
+      if (direction === 'horizontal') {
+        const distance = Math.abs(event.translationX);
+        const velocity = Math.abs(event.velocityX);
+        
+        if (distance > threshold || velocity > 800) {
+          shouldTriggerSwipe = true;
+          if (event.translationX > 0) {
+            runOnJS(onSwipeRight)();
+          } else {
+            runOnJS(onSwipeLeft)();
+          }
+        }
+      } else {
+        const distance = Math.abs(event.translationY);
+        const velocity = Math.abs(event.velocityY);
+        
+        if (distance > threshold || velocity > 800) {
+          shouldTriggerSwipe = true;
+          if (event.translationY > 0) {
+            runOnJS(onSwipeDown)();
+          } else {
+            runOnJS(onSwipeUp)();
+          }
+        }
+      }
+
+      // 元の位置に戻す
+      translateX.value = withSpring(0, {
+        damping: 15,
+        stiffness: 150,
+        mass: 1,
+      });
+      translateY.value = withSpring(0, {
+        damping: 15,
+        stiffness: 150,
+        mass: 1,
+      });
+      scale.value = withSpring(1);
+      opacity.value = withSpring(1);
+    },
+  }, [direction, threshold, onSwipeLeft, onSwipeRight, onSwipeUp, onSwipeDown]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { translateY: translateY.value },
+        { scale: scale.value },
+      ],
+      opacity: opacity.value,
+    };
+  });
+
+  // Web環境対応
   if (Platform.OS === 'web') {
-    console.log('Web swipe gesture enabled, direction:', direction, 'sensitivity:', sensitivity);
-    
     const handleStart = (e: any, clientX: number, clientY: number) => {
-      console.log('Swipe start detected:', clientX, clientY);
       e.currentTarget.startX = clientX;
       e.currentTarget.startY = clientY;
     };
@@ -50,7 +133,6 @@ export default function CalendarSwipeGesture({
       const diffX = e.currentTarget.startX - clientX;
       const diffY = e.currentTarget.startY - clientY;
       
-      console.log('Swipe detected:', { diffX, diffY, direction });
       processSwipe(diffX, diffY);
     };
 
@@ -71,7 +153,7 @@ export default function CalendarSwipeGesture({
     };
 
     const processSwipe = (diffX: number, diffY: number) => {
-      const threshold = 50; // 固定閾値
+      console.log('Processing swipe:', { diffX, diffY, direction, threshold });
       
       if (direction === 'horizontal') {
         if (Math.abs(diffX) > threshold && Math.abs(diffX) > Math.abs(diffY)) {
@@ -100,104 +182,14 @@ export default function CalendarSwipeGesture({
           style={styles.gestureArea}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
-          {...(Platform.OS === 'web' && {
-            onMouseDown: handleMouseDown,
-            onMouseUp: handleMouseUp,
-          })}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
         >
           {children}
         </View>
       </View>
     );
   }
-
-  // 感度設定から閾値を計算 (1-5の設定を50-150ピクセルに変換)
-  const threshold = useMemo(() => {
-    const baseThreshold = 100;
-    const sensitivityFactor = (6 - sensitivity) * 20; // 感度が高いほど閾値が低い
-    return baseThreshold - sensitivityFactor;
-  }, [sensitivity]);
-
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context: any) => {
-      context.startX = translateX.value;
-      context.startY = translateY.value;
-    },
-    onActive: (event, context) => {
-      if (direction === 'horizontal') {
-        translateX.value = context.startX + event.translationX;
-        // 垂直方向の移動を制限
-        if (Math.abs(event.translationY) < Math.abs(event.translationX) * 0.5) {
-          translateY.value = context.startY;
-        }
-      } else {
-        translateY.value = context.startY + event.translationY;
-        // 水平方向の移動を制限
-        if (Math.abs(event.translationX) < Math.abs(event.translationY) * 0.5) {
-          translateX.value = context.startX;
-        }
-      }
-    },
-    onEnd: (event) => {
-      let shouldTriggerSwipe = false;
-      let swipeAction: (() => void) | undefined;
-
-      if (direction === 'horizontal') {
-        const horizontalDistance = Math.abs(event.translationX);
-        const verticalDistance = Math.abs(event.translationY);
-        
-        // 水平方向のスワイプが垂直方向より優位で、閾値を超えた場合
-        if (horizontalDistance > threshold && horizontalDistance > verticalDistance * 1.5) {
-          shouldTriggerSwipe = true;
-          if (event.translationX > 0) {
-            swipeAction = onSwipeRight; // 右スワイプ（前月）
-          } else {
-            swipeAction = onSwipeLeft; // 左スワイプ（次月）
-          }
-        }
-      } else {
-        const horizontalDistance = Math.abs(event.translationX);
-        const verticalDistance = Math.abs(event.translationY);
-        
-        // 垂直方向のスワイプが水平方向より優位で、閾値を超えた場合
-        if (verticalDistance > threshold && verticalDistance > horizontalDistance * 1.5) {
-          shouldTriggerSwipe = true;
-          if (event.translationY > 0) {
-            swipeAction = onSwipeDown; // 下スワイプ（前月）
-          } else {
-            swipeAction = onSwipeUp; // 上スワイプ（次月）
-          }
-        }
-      }
-
-      // アニメーションで元の位置に戻す
-      const springConfig = {
-        damping: 15,
-        stiffness: 150,
-        mass: 1,
-        overshootClamping: false,
-        restDisplacementThreshold: 0.01,
-        restSpeedThreshold: 2,
-      };
-      
-      translateX.value = withSpring(0, springConfig);
-      translateY.value = withSpring(0, springConfig);
-
-      // スワイプアクションを実行
-      if (shouldTriggerSwipe && swipeAction) {
-        runOnJS(swipeAction)();
-      }
-    },
-  });
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [
-        { translateX: translateX.value * 0.1 }, // 軽微な視覚フィードバック
-        { translateY: translateY.value * 0.1 },
-      ],
-    };
-  });
 
   return (
     <GestureHandlerRootView style={styles.container}>

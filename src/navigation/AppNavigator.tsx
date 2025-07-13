@@ -6,18 +6,22 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import CalendarScreen from '../screens/CalendarScreen';
 import AnniversariesScreen from '../screens/AnniversariesScreen';
 import AnniversaryCreateScreen from '../screens/AnniversaryCreateScreen';
-import CoupleSettingsScreen from '../screens/CoupleSettingsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 import EventCreateScreen from '../screens/EventCreateScreen';
+import EventDetailScreen from '../screens/EventDetailScreen';
 import EventEditScreen from '../screens/EventEditScreen';
+import ProfileEditScreen from '../screens/ProfileEditScreen';
+import CalendarSettingsScreen from '../screens/CalendarSettingsScreen';
+import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import { SecurityDiagnosticsScreen } from '../screens/SecurityDiagnosticsScreen';
 
-import { RootStackParamList, MainTabParamList, CalendarStackParamList, AnniversaryStackParamList } from '../types/navigation';
+import { RootStackParamList, MainTabParamList, CalendarStackParamList, AnniversaryStackParamList, SettingsStackParamList } from '../types/navigation';
 
 const RootStack = createStackNavigator<RootStackParamList>();
 const MainTab = createBottomTabNavigator<MainTabParamList>();
 const CalendarStack = createStackNavigator<CalendarStackParamList>();
 const AnniversaryStack = createStackNavigator<AnniversaryStackParamList>();
-const SettingsStack = createStackNavigator();
+const SettingsStack = createStackNavigator<SettingsStackParamList>();
 
 function CalendarNavigator() {
   return (
@@ -25,12 +29,17 @@ function CalendarNavigator() {
       <CalendarStack.Screen 
         name="CalendarHome" 
         component={CalendarScreen}
-        options={{ title: 'カレンダー' }}
+        options={{ headerShown: false }}
       />
       <CalendarStack.Screen 
         name="EventCreate" 
         component={EventCreateScreen}
         options={{ title: '予定作成' }}
+      />
+      <CalendarStack.Screen 
+        name="EventDetail" 
+        component={EventDetailScreen}
+        options={{ headerShown: false }}
       />
       <CalendarStack.Screen 
         name="EventEdit" 
@@ -63,8 +72,23 @@ function SettingsNavigator() {
     <SettingsStack.Navigator>
       <SettingsStack.Screen 
         name="SettingsHome" 
-        component={CoupleSettingsScreen}
+        component={SettingsScreen}
         options={{ title: '設定' }}
+      />
+      <SettingsStack.Screen 
+        name="ProfileEdit" 
+        component={ProfileEditScreen}
+        options={{ title: 'プロフィール編集' }}
+      />
+      <SettingsStack.Screen 
+        name="CalendarSettings" 
+        component={CalendarSettingsScreen}
+        options={{ title: 'カレンダー設定' }}
+      />
+      <SettingsStack.Screen 
+        name="NotificationSettings" 
+        component={NotificationSettingsScreen}
+        options={{ title: '通知設定' }}
       />
       <SettingsStack.Screen 
         name="SecurityDiagnostics" 

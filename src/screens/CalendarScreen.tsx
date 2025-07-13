@@ -26,6 +26,7 @@ import { getDateColor, getDateInfo, DATE_COLORS } from '../utils/dateUtils';
 import { generateOptimizedMarkedDates, CalendarProcessingResult } from '../utils/optimizedCalendarUtils';
 import { useCouple } from '../contexts/CoupleContext';
 import { EventOwnerType } from '../types/coupleTypes';
+import { japaneseHolidays, getHolidayName } from '../constants/japaneseHolidays';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const isSmallScreen = screenWidth < 375;
@@ -69,6 +70,56 @@ export default function CalendarScreen() {
 
       try {
         const result = generateOptimizedMarkedDates(events, selectedDate);
+        
+        // 祝日表示が有効な場合、祝日をマークに追加
+        if (settings.calendarSettings.showHolidays) {
+          const enhancedMarkedDates = { ...result.markedDates };
+          
+          japaneseHolidays.forEach(holiday => {
+            const existingMark = enhancedMarkedDates[holiday.date];
+            const isSelected = selectedDate === holiday.date;
+            
+            if (existingMark) {
+              // 既存のマークがある場合、祝日スタイルを上書き（予定がある祝日は少し異なる色）
+              enhancedMarkedDates[holiday.date] = {
+                ...existingMark,
+                customStyles: {
+                  container: {
+                    backgroundColor: existingMark.dots && existingMark.dots.length > 0 ? '#f8bbd9' : '#ffcdd2',
+                    borderRadius: 6,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    borderWidth: existingMark.dots && existingMark.dots.length > 0 ? 2 : 0,
+                    borderColor: '#c62828',
+                  },
+                  text: {
+                    color: '#c62828',
+                    fontWeight: 'bold',
+                  }
+                }
+              };
+            } else {
+              // 新しいマークを作成（祝日のみ）
+              enhancedMarkedDates[holiday.date] = {
+                customStyles: {
+                  container: {
+                    backgroundColor: '#ffcdd2',
+                    borderRadius: 6,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  },
+                  text: {
+                    color: '#c62828',
+                    fontWeight: 'bold',
+                  }
+                }
+              };
+            }
+          });
+          
+          result.markedDates = enhancedMarkedDates;
+        }
+        
         setCalendarResult(result);
         
         // 開発環境での簡易ログ（50ms以上のみ）
@@ -86,16 +137,20 @@ export default function CalendarScreen() {
 
     // 即座に実行（デバウンスなし）
     processCalendar();
-  }, [events, selectedDate, loading]);
+  }, [events, selectedDate, loading, settings.calendarSettings.showHolidays, settings.calendarSettings.weekStartsOnMonday]);
 
-  // スワイプナビゲーション
+  // スワイプナビゲーション（アニメーション対応）
   const handleSwipeLeft = () => {
     // 左スワイプ = 次月
     const currentDate = new Date(currentMonth);
     currentDate.setMonth(currentDate.getMonth() + 1);
     const newMonth = currentDate.toISOString().split('T')[0];
     console.log('Swipe left - moving to next month:', newMonth);
-    setCurrentMonth(newMonth);
+    
+    // アニメーション中にカレンダー更新（より滑らか）
+    setTimeout(() => {
+      setCurrentMonth(newMonth);
+    }, 100);
   };
 
   const handleSwipeRight = () => {
@@ -104,7 +159,10 @@ export default function CalendarScreen() {
     currentDate.setMonth(currentDate.getMonth() - 1);
     const newMonth = currentDate.toISOString().split('T')[0];
     console.log('Swipe right - moving to previous month:', newMonth);
-    setCurrentMonth(newMonth);
+    
+    setTimeout(() => {
+      setCurrentMonth(newMonth);
+    }, 100);
   };
 
   const handleSwipeUp = () => {
@@ -113,7 +171,10 @@ export default function CalendarScreen() {
     currentDate.setMonth(currentDate.getMonth() + 1);
     const newMonth = currentDate.toISOString().split('T')[0];
     console.log('Swipe up - moving to next month:', newMonth);
-    setCurrentMonth(newMonth);
+    
+    setTimeout(() => {
+      setCurrentMonth(newMonth);
+    }, 100);
   };
 
   const handleSwipeDown = () => {
@@ -122,7 +183,10 @@ export default function CalendarScreen() {
     currentDate.setMonth(currentDate.getMonth() - 1);
     const newMonth = currentDate.toISOString().split('T')[0];
     console.log('Swipe down - moving to previous month:', newMonth);
-    setCurrentMonth(newMonth);
+    
+    setTimeout(() => {
+      setCurrentMonth(newMonth);
+    }, 100);
   };
 
   const renderEvent = ({ item }: { item: Event }) => {
@@ -134,10 +198,12 @@ export default function CalendarScreen() {
       <TouchableOpacity 
         style={[
           styles.eventItem, 
-          { borderLeftColor: ownerColor, borderLeftWidth: 4 },
-          { backgroundColor: `${ownerColor}08` } // 薄い背景色
+          { 
+            borderLeftColor: ownerColor, 
+            borderLeftWidth: 4,
+          }
         ]}
-        onPress={() => navigation.navigate('EventEdit', { eventId: item.id })}
+        onPress={() => navigation.navigate('EventDetail', { eventId: item.id })}
       >
         <View style={styles.eventContent}>
           <View style={styles.eventHeader}>
@@ -179,50 +245,33 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>カレンダー</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity 
-            style={styles.quickAddButton}
-            onPress={() => setShowInlineCreator(true)}
-          >
-            <Text style={styles.quickAddButtonText}>クイック追加</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={() => navigation.navigate('EventCreate')}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* フィルターバー */}
       <EventFilterBar compact={isMobile} />
 
       <CalendarSwipeGesture
+        key={`swipe-${settings.swipeSettings.direction}-${settings.swipeSettings.sensitivity}`}
         onSwipeLeft={handleSwipeLeft}
         onSwipeRight={handleSwipeRight}
         onSwipeUp={handleSwipeUp}
         onSwipeDown={handleSwipeDown}
       >
         <Calendar
-        key={currentMonth} // Force re-render when month changes
+        key={`${currentMonth}-${settings.calendarSettings.weekStartsOnMonday}-${settings.calendarSettings.showHolidays}-v3`} // Force re-render when month or settings change
         style={styles.calendar}
         theme={{
           backgroundColor: '#ffffff',
           calendarBackground: '#ffffff',
-          textSectionTitleColor: '#b6c1cd',
-          selectedDayBackgroundColor: '#ff6b6b',
+          textSectionTitleColor: '#666666',
+          selectedDayBackgroundColor: '#007AFF',
           selectedDayTextColor: '#ffffff',
           todayTextColor: '#ff6b6b',
-          dayTextColor: '#2d4150',
-          textDisabledColor: '#d9e1e8',
+          dayTextColor: '#333333',
+          textDisabledColor: '#999999',
           dotColor: '#ff6b6b',
           selectedDotColor: '#ffffff',
           arrowColor: '#ff6b6b',
-          disabledArrowColor: '#d9e1e8',
-          monthTextColor: '#2d4150',
+          disabledArrowColor: '#999999',
+          monthTextColor: '#333333',
           indicatorColor: '#ff6b6b',
           textDayFontWeight: '300',
           textMonthFontWeight: 'bold',
@@ -230,18 +279,77 @@ export default function CalendarScreen() {
           textDayFontSize: isMobile ? 14 : 16,
           textMonthFontSize: isMobile ? 14 : 16,
           textDayHeaderFontSize: isMobile ? 11 : 13,
+          // 曜日ヘッダーの色分け
+          'stylesheet.calendar.header': {
+            dayHeader: {
+              color: '#666666'
+            },
+            week: {
+              marginTop: 5,
+              flexDirection: 'row',
+              justifyContent: 'space-around'
+            }
+          },
+          // 日付テキストの色分け（すべてのケースに対応）
+          'stylesheet.day.basic': {
+            base: {
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center'
+            },
+            text: {
+              marginTop: Platform.OS === 'android' ? 4 : 6,
+              fontSize: isMobile ? 14 : 16,
+              fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'Roboto',
+              fontWeight: '300',
+              color: '#333333'
+            },
+            today: {
+              backgroundColor: 'transparent'
+            },
+            todayText: {
+              color: '#ff6b6b',
+              fontWeight: 'bold'
+            }
+          },
+          'stylesheet.day.multiDot': {
+            base: {
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center'
+            },
+            text: {
+              marginTop: Platform.OS === 'android' ? 4 : 6,
+              fontSize: isMobile ? 14 : 16,
+              fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'Roboto',
+              fontWeight: '300',
+              color: '#333333'
+            },
+            today: {
+              backgroundColor: 'transparent'
+            },
+            todayText: {
+              color: '#ff6b6b',
+              fontWeight: 'bold'
+            }
+          }
         }}
+        firstDay={settings.calendarSettings.weekStartsOnMonday ? 1 : 0}
+        showWeekNumbers={settings.calendarSettings.showWeekNumbers}
+        monthFormat={
+          settings.calendarSettings.monthFormat === 'japanese' ? 'yyyy年 MM月' :
+          settings.calendarSettings.monthFormat === 'english' ? 'MMMM yyyy' : 'MM月'
+        }
         onDayPress={(day) => {
           setSelectedDate(day.dateString);
         }}
         markedDates={calendarResult.markedDates as any}
-        markingType="multi-dot"
-        monthFormat={'yyyy年 MM月'}
+        markingType="custom"
         hideExtraDays={true}
         disableMonthChange={true}
-        firstDay={0}
         hideDayNames={false}
-        showWeekNumbers={false}
         onPressArrowLeft={() => handleSwipeRight()}
         onPressArrowRight={() => handleSwipeLeft()}
         disableArrowLeft={false}
@@ -250,9 +358,15 @@ export default function CalendarScreen() {
         current={currentMonth}
         // onMonthChange disabled to prevent conflicts with swipe navigation
         renderHeader={(date) => {
+          const formatMap = {
+            japanese: 'yyyy年 MM月',
+            english: 'MMMM yyyy',
+            short: 'MM月'
+          };
+          const format = formatMap[settings.calendarSettings.monthFormat] || 'yyyy年 MM月';
           return (
             <Text style={styles.headerText}>
-              {date.toString('yyyy年 MM月')}
+              {date.toString(format)}
             </Text>
           );
         }}
@@ -289,6 +403,16 @@ export default function CalendarScreen() {
           })()}
         </View>
         
+        {/* インライン予定作成フォーム */}
+        <View style={styles.inlineCreatorContainer}>
+          <TouchableOpacity
+            style={styles.inlineAddButton}
+            onPress={() => setShowInlineCreator(true)}
+          >
+            <Text style={styles.inlineAddButtonText}>+ 予定を追加</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
           <ActivityIndicator size="large" color="#ff6b6b" style={styles.loading} />
         ) : displayedEvents.length > 0 ? (
@@ -299,7 +423,9 @@ export default function CalendarScreen() {
             style={styles.eventsList}
           />
         ) : (
-          <Text style={styles.noEvents}>予定がありません</Text>
+          <View style={styles.noEventsContainer}>
+            <Text style={styles.noEvents}>予定がありません</Text>
+          </View>
         )}
       </View>
 
@@ -322,7 +448,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: isMobile ? 16 : 20,
     paddingVertical: isMobile ? 12 : 16,
@@ -489,5 +615,28 @@ const styles = StyleSheet.create({
     fontSize: isMobile ? 8 : 10,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  inlineCreatorContainer: {
+    marginBottom: isMobile ? 12 : 16,
+  },
+  inlineAddButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: isMobile ? 12 : 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inlineAddButtonText: {
+    color: '#ff6b6b',
+    fontSize: isMobile ? 14 : 16,
+    fontWeight: '500',
+  },
+  noEventsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

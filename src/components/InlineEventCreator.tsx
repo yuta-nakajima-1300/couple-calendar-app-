@@ -14,6 +14,8 @@ import { useFirebaseEvents } from '../contexts/FirebaseEventContext';
 import CategoryPicker from './CategoryPicker';
 import TimePicker from './TimePicker';
 import { EventCategory, DEFAULT_CATEGORIES } from '../types';
+import { useCouple } from '../contexts/CoupleContext';
+import { EventOwnerType } from '../types/coupleTypes';
 
 interface InlineEventCreatorProps {
   visible: boolean;
@@ -29,12 +31,14 @@ export default function InlineEventCreator({
   onEventCreated
 }: InlineEventCreatorProps) {
   const { createEvent } = useFirebaseEvents();
+  const { settings, getEventOwnerName, getEventColor } = useCouple();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [isAllDay, setIsAllDay] = useState(false);
   const [category, setCategory] = useState<EventCategory>(DEFAULT_CATEGORIES[0]);
+  const [ownerType, setOwnerType] = useState<EventOwnerType>('shared');
   const [saving, setSaving] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -46,6 +50,7 @@ export default function InlineEventCreator({
     setEndTime('');
     setIsAllDay(false);
     setCategory(DEFAULT_CATEGORIES[0]);
+    setOwnerType('shared');
   };
 
   const handleSave = async () => {
@@ -79,6 +84,7 @@ export default function InlineEventCreator({
         endTime: isAllDay ? undefined : endTime || undefined,
         isAllDay,
         category,
+        ownerType,
         createdBy: 'current-user',
       });
 
@@ -211,6 +217,37 @@ export default function InlineEventCreator({
                 <Text style={styles.categoryText}>{category.name}</Text>
               </View>
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>予定の所有者</Text>
+            <View style={styles.ownerTypeContainer}>
+              {(['mine', 'partner', 'shared'] as EventOwnerType[]).map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={[
+                    styles.ownerTypeButton,
+                    ownerType === type && styles.ownerTypeButtonSelected
+                  ]}
+                  onPress={() => setOwnerType(type)}
+                >
+                  <View style={styles.ownerTypeContent}>
+                    <View 
+                      style={[
+                        styles.ownerTypeIndicator, 
+                        { backgroundColor: getEventColor(type) }
+                      ]} 
+                    />
+                    <Text style={[
+                      styles.ownerTypeText,
+                      ownerType === type && styles.ownerTypeTextSelected
+                    ]}>
+                      {getEventOwnerName(type)}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -368,5 +405,48 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'right',
     marginTop: 4,
+  },
+  ownerTypeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 4,
+  },
+  ownerTypeButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  ownerTypeButtonSelected: {
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  ownerTypeContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ownerTypeIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 6,
+  },
+  ownerTypeText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+  ownerTypeTextSelected: {
+    color: '#333',
+    fontWeight: 'bold',
   },
 });

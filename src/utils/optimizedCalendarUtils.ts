@@ -1,7 +1,7 @@
 // 最適化されたカレンダー処理ユーティリティ
 
 import { Event } from '../types';
-import { getDateColor, DATE_COLORS } from './dateUtils';
+import { getDateColor, getDateType, DATE_COLORS } from './dateUtils';
 import { performanceTracker } from './performanceTracker';
 import { calendarCache } from './calendarCache';
 
@@ -19,6 +19,17 @@ export interface OptimizedMarkedDate {
   selected?: boolean;
   selectedColor?: string;
   selectedTextColor?: string;
+  textColor?: string;
+  customStyles?: {
+    container?: {
+      backgroundColor?: string;
+      borderRadius?: number;
+    };
+    text?: {
+      color?: string;
+      fontWeight?: string;
+    };
+  };
 }
 
 export interface CalendarProcessingResult {
@@ -78,12 +89,58 @@ export function generateWeekendHolidayMarking(dateRange: DateRange): Record<stri
     const dateColor = getDateColor(dateString);
     
     // すべての日付に色分けを適用
+    const dateType = getDateType(dateString);
+    
+    // 基本スタイル
     dates[dateString] = {
+      textColor: dateColor,
       customTextStyle: {
         color: dateColor,
         fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
       }
     };
+
+    // 日曜・土曜・祝日の場合は背景色と文字色で分かりやすく表示
+    if (dateType === 'sunday') {
+      dates[dateString].customStyles = {
+        container: {
+          backgroundColor: '#ffebee',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#d32f2f',
+          fontWeight: 'bold',
+        }
+      };
+    } else if (dateType === 'saturday') {
+      dates[dateString].customStyles = {
+        container: {
+          backgroundColor: '#e3f2fd',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#1976d2',
+          fontWeight: 'bold',
+        }
+      };
+    } else if (dateType === 'holiday') {
+      dates[dateString].customStyles = {
+        container: {
+          backgroundColor: '#ffcdd2',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#c62828',
+          fontWeight: 'bold',
+        }
+      };
+    }
 
     currentDate.setDate(currentDate.getDate() + 1);
   }
@@ -125,28 +182,184 @@ export function processEventMarkings(
         const dateString = currentDate.toISOString().split('T')[0];
         
         if (!dates[dateString]) {
-          dates[dateString] = {};
+          const dateColor = getDateColor(dateString);
+          const dateType = getDateType(dateString);
+          
+          // 基本スタイル
+          dates[dateString] = {
+            textColor: dateColor,
+            customTextStyle: {
+              color: dateColor,
+              fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+            }
+          };
+
+          // 日曜・土曜・祝日の場合は背景色と文字色で分かりやすく表示
+          if (dateType === 'sunday') {
+            dates[dateString].customStyles = {
+              container: {
+                backgroundColor: '#ffebee',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#d32f2f',
+                fontWeight: 'bold',
+              }
+            };
+          } else if (dateType === 'saturday') {
+            dates[dateString].customStyles = {
+              container: {
+                backgroundColor: '#e3f2fd',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#1976d2',
+                fontWeight: 'bold',
+              }
+            };
+          } else if (dateType === 'holiday') {
+            dates[dateString].customStyles = {
+              container: {
+                backgroundColor: '#ffcdd2',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#c62828',
+                fontWeight: 'bold',
+              }
+            };
+          }
         }
         
+        // 予定がある場合はドットを追加
         if (!dates[dateString].dots) {
           dates[dateString].dots = [];
         }
         
         dates[dateString].dots!.push({ color: event.category.color });
+        
+        // 予定がある場合、既存の背景色スタイルにボーダーを追加、または平日の場合は薄い背景色を追加
+        if (dates[dateString].customStyles) {
+          dates[dateString].customStyles.container = {
+            ...dates[dateString].customStyles.container,
+            borderWidth: 2,
+            borderColor: event.category.color,
+          };
+        } else {
+          // 平日に予定がある場合は薄い背景色を追加
+          dates[dateString].customStyles = {
+            container: {
+              backgroundColor: '#f5f5f5',
+              borderRadius: 6,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: event.category.color,
+            },
+            text: {
+              color: '#333333',
+              fontWeight: 'normal',
+            }
+          };
+        }
         currentDate.setDate(currentDate.getDate() + 1);
       }
     } else {
       // 単日予定の処理
       if (event.date >= dateRange.start && event.date <= dateRange.end) {
         if (!dates[event.date]) {
-          dates[event.date] = {};
+          const dateColor = getDateColor(event.date);
+          const dateType = getDateType(event.date);
+          
+          // 基本スタイル
+          dates[event.date] = {
+            textColor: dateColor,
+            customTextStyle: {
+              color: dateColor,
+              fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+            }
+          };
+
+          // 日曜・土曜・祝日の場合は背景色と文字色で分かりやすく表示
+          if (dateType === 'sunday') {
+            dates[event.date].customStyles = {
+              container: {
+                backgroundColor: '#ffebee',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#d32f2f',
+                fontWeight: 'bold',
+              }
+            };
+          } else if (dateType === 'saturday') {
+            dates[event.date].customStyles = {
+              container: {
+                backgroundColor: '#e3f2fd',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#1976d2',
+                fontWeight: 'bold',
+              }
+            };
+          } else if (dateType === 'holiday') {
+            dates[event.date].customStyles = {
+              container: {
+                backgroundColor: '#ffcdd2',
+                borderRadius: 6,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              text: {
+                color: '#c62828',
+                fontWeight: 'bold',
+              }
+            };
+          }
         }
         
+        // 予定がある場合はドットを追加
         if (!dates[event.date].dots) {
           dates[event.date].dots = [];
         }
         
         dates[event.date].dots!.push({ color: event.category.color });
+        
+        // 予定がある場合、既存の背景色スタイルにボーダーを追加、または平日の場合は薄い背景色を追加
+        if (dates[event.date].customStyles) {
+          dates[event.date].customStyles.container = {
+            ...dates[event.date].customStyles.container,
+            borderWidth: 2,
+            borderColor: event.category.color,
+          };
+        } else {
+          // 平日に予定がある場合は薄い背景色を追加
+          dates[event.date].customStyles = {
+            container: {
+              backgroundColor: '#f5f5f5',
+              borderRadius: 6,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: event.category.color,
+            },
+            text: {
+              color: '#333333',
+              fontWeight: 'normal',
+            }
+          };
+        }
       }
     }
   }
@@ -166,7 +379,59 @@ export function applySelectedDateMarking(
   const updatedDates = { ...dates };
   
   if (!updatedDates[selectedDate]) {
-    updatedDates[selectedDate] = {};
+    const dateColor = getDateColor(selectedDate);
+    const dateType = getDateType(selectedDate);
+    
+    // 基本スタイル
+    updatedDates[selectedDate] = {
+      textColor: dateColor,
+      customTextStyle: {
+        color: dateColor,
+        fontWeight: dateColor !== DATE_COLORS.weekday ? 'bold' : 'normal'
+      }
+    };
+
+    // 日曜・土曜・祝日の場合は背景色と文字色で分かりやすく表示
+    if (dateType === 'sunday') {
+      updatedDates[selectedDate].customStyles = {
+        container: {
+          backgroundColor: '#ffebee',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#d32f2f',
+          fontWeight: 'bold',
+        }
+      };
+    } else if (dateType === 'saturday') {
+      updatedDates[selectedDate].customStyles = {
+        container: {
+          backgroundColor: '#e3f2fd',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#1976d2',
+          fontWeight: 'bold',
+        }
+      };
+    } else if (dateType === 'holiday') {
+      updatedDates[selectedDate].customStyles = {
+        container: {
+          backgroundColor: '#ffcdd2',
+          borderRadius: 6,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        text: {
+          color: '#c62828',
+          fontWeight: 'bold',
+        }
+      };
+    }
   }
 
   updatedDates[selectedDate] = {

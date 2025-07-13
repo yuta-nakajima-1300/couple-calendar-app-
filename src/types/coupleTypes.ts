@@ -17,6 +17,15 @@ export interface SwipeSettings {
   sensitivity: number; // 1-5 の感度設定
 }
 
+export interface CalendarSettings {
+  weekStartsOnMonday: boolean;
+  showWeekNumbers: boolean;
+  showDeclinedEvents: boolean;
+  defaultEventDuration: string; // '30' | '60' | '90' | '120' | 'all-day'
+  monthFormat: 'japanese' | 'english' | 'short'; // '2024年1月' | 'January 2024' | '1月'
+  showHolidays: boolean;
+}
+
 export interface CoupleSettings {
   user: UserProfile;
   partner: UserProfile;
@@ -25,6 +34,7 @@ export interface CoupleSettings {
   showOwnerInitials: boolean;
   showOwnerNames: boolean;
   swipeSettings: SwipeSettings;
+  calendarSettings: CalendarSettings;
 }
 
 export interface EventOwnership {
@@ -99,6 +109,15 @@ export const DEFAULT_FILTER_STATE: FilterState = {
   shared: true,
 };
 
+export const DEFAULT_CALENDAR_SETTINGS: CalendarSettings = {
+  weekStartsOnMonday: false,
+  showWeekNumbers: false,
+  showDeclinedEvents: false,
+  defaultEventDuration: '60',
+  monthFormat: 'japanese',
+  showHolidays: true,
+};
+
 // デフォルト設定
 export const DEFAULT_COUPLE_SETTINGS: CoupleSettings = {
   user: {
@@ -123,4 +142,5 @@ export const DEFAULT_COUPLE_SETTINGS: CoupleSettings = {
     direction: 'horizontal',
     sensitivity: 3,
   },
+  calendarSettings: DEFAULT_CALENDAR_SETTINGS,
 };

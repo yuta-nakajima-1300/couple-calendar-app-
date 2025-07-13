@@ -4,14 +4,8 @@
 
   [build.environment]
     NODE_VERSION = "18"
-    EXPO_PUBLIC_FIREBASE_API_KEY = "AIzaSyA6rjou9WjkG-Ivqfpqcis5jZXbGLfyXDY"
-    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN = "couple-calendar-app-ac225.firebaseapp.com"
-    EXPO_PUBLIC_FIREBASE_PROJECT_ID = "couple-calendar-app-ac225"
-    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET = "couple-calendar-app-ac225.firebasestorage.app"
-    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "1093220447522"
-    EXPO_PUBLIC_FIREBASE_APP_ID = "1:1093220447522:web:9d96a3e6087f9ad4f6217b"
-    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID = "G-00RBKPTXQ7"
-    EXPO_PUBLIC_ENVIRONMENT = "production"
+    # Firebase environment variables should be set in Netlify Dashboard
+    # See DEPLOYMENT_GUIDE.md for setup instructions
 
   [[headers]]
     for = "/*"

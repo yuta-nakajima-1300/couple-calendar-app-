@@ -4,7 +4,8 @@ import {
   signOut, 
   onAuthStateChanged,
   User,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  deleteUser
 } from 'firebase/auth';
 import { 
   doc, 
@@ -304,6 +305,60 @@ class AuthService {
       return true;
     } catch (error) {
       console.error('Failed to unlink couple:', error);
+      throw error;
+    }
+  }
+
+  // ユーザープロフィール更新
+  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<void> {
+    try {
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      
+      const userRef = doc(database, 'users', userId);
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Failed to update user profile:', error);
+      throw error;
+    }
+  }
+
+  // アカウント削除
+  async deleteAccount(userId: string): Promise<void> {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser || currentUser.uid !== userId) {
+        throw new Error('認証エラー: 現在のユーザーのみがアカウントを削除できます');
+      }
+
+      // カップル連携を解除
+      const userProfile = await this.getUserProfile(userId);
+      if (userProfile?.coupleId) {
+        await this.unlinkCouple(userId);
+      }
+
+      // Firestoreのユーザーデータを削除
+      const database = getSafeDb();
+      if (!database) throw new Error('Database not available');
+      
+      // ユーザードキュメントを削除済みとしてマーク
+      const userRef = doc(database, 'users', userId);
+      await setDoc(userRef, { 
+        deleted: true, 
+        deletedAt: serverTimestamp(),
+        email: null,
+        displayName: 'Deleted User',
+        photoURL: null,
+        inviteCode: null
+      }, { merge: true });
+
+      // Firebase Authenticationからユーザーを削除
+      await deleteUser(currentUser);
+    } catch (error) {
+      console.error('Failed to delete account:', error);
       throw error;
     }
   }

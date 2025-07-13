@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   linkCouple: (inviteCode: string) => Promise<boolean>;
   unlinkCouple: () => Promise<boolean>;
   refreshUserProfile: () => Promise<void>;
@@ -191,12 +192,36 @@ export const FirebaseAuthProvider: React.FC<FirebaseAuthProviderProps> = ({ chil
     }
   };
 
+  // アカウント削除
+  const deleteAccount = async () => {
+    try {
+      if (!user) {
+        throw new Error('ユーザーがログインしていません');
+      }
+
+      await authService.deleteAccount(user.uid);
+      
+      // トークンを削除
+      try {
+        await deleteSecureItem(SecureKeys.USER_TOKEN);
+        await deleteSecureItem(SecureKeys.REFRESH_TOKEN);
+        await deleteSecureItem(SecureKeys.COUPLE_CODE);
+      } catch (error) {
+        console.error('Failed to clear secure data:', error);
+      }
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     userProfile,
     loading,
     signInWithGoogle,
     signOut,
+    deleteAccount,
     linkCouple,
     unlinkCouple,
     refreshUserProfile,

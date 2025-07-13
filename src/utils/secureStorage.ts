@@ -11,6 +11,36 @@ import { Platform } from 'react-native';
 const isSecureStoreAvailable = Platform.OS !== 'web';
 
 /**
+ * UTF-8文字列をBase64エンコード
+ */
+function utf8ToBase64(str: string): string {
+  // UTF-8文字列をバイト配列に変換
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  // バイト配列をバイナリ文字列に変換
+  const binString = Array.from(data, (byte) =>
+    String.fromCodePoint(byte)
+  ).join('');
+  // Base64エンコード
+  return btoa(binString);
+}
+
+/**
+ * Base64文字列をUTF-8デコード
+ */
+function base64ToUtf8(base64: string): string {
+  // Base64デコード
+  const binString = atob(base64);
+  // バイナリ文字列をバイト配列に変換
+  const bytes = Uint8Array.from(binString, (char) =>
+    char.codePointAt(0)!
+  );
+  // UTF-8デコード
+  const decoder = new TextDecoder();
+  return decoder.decode(bytes);
+}
+
+/**
  * セキュアにデータを保存
  */
 export async function setSecureItem(key: string, value: string): Promise<void> {
@@ -21,8 +51,8 @@ export async function setSecureItem(key: string, value: string): Promise<void> {
     } else {
       // Web環境: 警告を出しつつ通常のストレージに保存
       console.warn('SecureStore is not available on web. Using AsyncStorage as fallback.');
-      // Base64エンコードで軽微な難読化
-      const encoded = btoa(value);
+      // UTF-8対応Base64エンコードで軽微な難読化
+      const encoded = utf8ToBase64(value);
       await AsyncStorage.setItem(`secure_${key}`, encoded);
     }
   } catch (error) {
@@ -40,10 +70,10 @@ export async function getSecureItem(key: string): Promise<string | null> {
       // モバイル環境: 暗号化されたデータを復号
       return await SecureStore.getItemAsync(key);
     } else {
-      // Web環境: Base64デコード
+      // Web環境: UTF-8対応Base64デコード
       const encoded = await AsyncStorage.getItem(`secure_${key}`);
       if (encoded) {
-        return atob(encoded);
+        return base64ToUtf8(encoded);
       }
       return null;
     }
@@ -110,14 +140,14 @@ export function simpleEncrypt(text: string, key: string): string {
       text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
     );
   }
-  return btoa(result); // Base64エンコード
+  return utf8ToBase64(result); // UTF-8対応Base64エンコード
 }
 
 /**
  * 簡易的な復号化（XOR）
  */
 export function simpleDecrypt(encrypted: string, key: string): string {
-  const decoded = atob(encrypted); // Base64デコード
+  const decoded = base64ToUtf8(encrypted); // UTF-8対応Base64デコード
   let result = '';
   for (let i = 0; i < decoded.length; i++) {
     result += String.fromCharCode(
